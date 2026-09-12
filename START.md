@@ -114,3 +114,5 @@ Conflict dialog: **Keep Disk** = this repo wins; **Keep Studio** = the place win
 Studio Settings → Script Sync: `robuild prefs apply` (Studio closed) so auto-resume stays on and conflicts keep the files in this repo.
 
 Docs: [Script Sync](https://create.roblox.com/docs/scripting/sync) · [Studio MCP](https://create.roblox.com/docs/studio/mcp) · [Studio CLI](https://create.roblox.com/docs/studio/command-line-interface)
+
+Studio internals we reverse-engineered (plist keys, service vs Folder resume, plugin Loaded hang, FLog truncation): **[NOTES.md](NOTES.md)**.
