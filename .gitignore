@@ -1,0 +1,33 @@
+# built binaries
+/robuild
+/robuild.exe
+/scriptsync
+/scriptsync.exe
+/start
+/start.exe
+
+# generated MCP / editor config
+.mcp.json
+.grok/config.toml
+.codex/config.toml
+
+# Roblox project (place, Luau, per-game sync map)
+place.json
+place.rbxlx
+place.rbxlx.lock
+*.rbxl
+*.rbxlx
+*.rbxm
+robuild-sync.json
+/src/
+/ReplicatedStorage/
+/ServerScriptService/
+/ServerStorage/
+/StarterCharacterScripts/
+/StarterPlayerScripts/
+/robuild-dump/
+
+# junk
+.DS_Store
+Thumbs.db
+__pycache__/
