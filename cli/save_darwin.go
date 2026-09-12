@@ -14,7 +14,7 @@ import (
 func runSave() {
 	studio := findStudio()
 	if studio == "" || !studioRunning(studio) {
-		fail(exitError, "ERROR: Roblox Studio is not running.\nStart it with robuild first, then robuild save.")
+		fail(exitError, "ERROR: Roblox Studio is not running.\nStart it with robld first, then robld save.")
 	}
 
 	p := loadPlace()
@@ -37,7 +37,7 @@ func runSave() {
 		if isAccessibilityError(msg) {
 			fail(exitError, "ERROR: macOS blocked keystrokes to Studio (Accessibility).\n"+
 				"  System Settings → Privacy & Security → Accessibility\n"+
-				"  Enable the app that launched robuild (Terminal, iTerm, Grok, …).\n"+
+				"  Enable the app that launched robld (Terminal, iTerm, Grok, …).\n"+
 				"  %s", strings.TrimSpace(msg))
 		}
 		fail(exitError, "ERROR: could not send Save to Studio.\n  %s", strings.TrimSpace(msg))

@@ -107,9 +107,9 @@ func migrateLegacyGreenfieldMap(m syncManifest) syncManifest {
 
 func seedGreenfield(m syncManifest) {
 	files := map[string]string{
-		"src/server/main.server.luau": "print(\"robuild server\")\n",
+		"src/server/main.server.luau": "print(\"robld server\")\n",
 		"src/shared/Hello.luau":       "return {}\n",
-		"src/client/main.client.luau": "print(\"robuild client\")\n",
+		"src/client/main.client.luau": "print(\"robld client\")\n",
 	}
 	for rel, body := range files {
 		path := filepath.Join(root, filepath.FromSlash(rel))
@@ -229,7 +229,7 @@ func syncInstructions() string {
 	for _, r := range m.Roots {
 		fmt.Fprintf(&b, "  %s  →  %s\n", r.Instance, absSyncPath(r.Disk))
 	}
-	b.WriteString("Then run robuild again. Edit ")
+	b.WriteString("Then run robld again. Edit ")
 	b.WriteString(syncManifestName)
 	b.WriteString(" if this project uses different folders.\n")
 	return b.String()

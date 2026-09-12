@@ -69,7 +69,7 @@ func inspectRbxStorage(outPath string) string {
 		return ""
 	}
 	if outPath == "" {
-		outPath = filepath.Join(os.TempDir(), "robuild-rbx-storage.txt")
+		outPath = filepath.Join(os.TempDir(), "robld-rbx-storage.txt")
 	}
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return ""

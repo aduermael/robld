@@ -17,7 +17,7 @@ import (
 
 const dumpFolderName = "robuild-dump"
 
-var dumpLogRe = regexp.MustCompile(`(?i)(script\s*sync|scriptsync|instancefilesync|auto.?resume|did not resume|sync to|ROBUILD|KeepLocal|placeIDEState|File_Sync|synced hierarch|user_robuild|StartSync)`)
+var dumpLogRe = regexp.MustCompile(`(?i)(script\s*sync|scriptsync|instancefilesync|auto.?resume|did not resume|sync to|ROBUILD|KeepLocal|placeIDEState|File_Sync|synced hierarch|user_robld|StartSync)`)
 
 func dumpDir() string {
 	if v := strings.TrimSpace(os.Getenv("ROBUILD_DUMP_DIR")); v != "" {
@@ -45,7 +45,7 @@ func runDump() {
 		fmt.Fprintf(&report, format+"\n", args...)
 	}
 
-	w("robuild dump  %s", time.Now().Format(time.RFC3339))
+	w("robld dump  %s", time.Now().Format(time.RFC3339))
 	w("Paste this folder (especially REPORT.txt) back into the agent.")
 	w("")
 	w("== machine ==")
@@ -205,7 +205,7 @@ func runDump() {
 
 	pluginPath := filepath.Join(studioPluginsDir(), pluginFileName)
 	w("")
-	w("== robuild plugin ==")
+	w("== robld plugin ==")
 	if st, err := os.Stat(pluginPath); err == nil {
 		w("installed %s (%d bytes, %s)", pluginPath, st.Size(), st.ModTime().Format(time.RFC3339))
 	} else {

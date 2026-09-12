@@ -13,8 +13,8 @@ const pluginFileName = "robuild_agent.lua"
 
 // Local Studio plugin. InstanceFileSyncService is documented query-only;
 // we still create the Folder tree, try FileSync/InternalSync start methods,
-// and print ROBUILD_JSON so robuild can see whether resume actually bound.
-const pluginTemplate = `-- robuild: Script Sync prefs, folder tree, start-sync probe.
+// and print ROBUILD_JSON so robld can see whether resume actually bound.
+const pluginTemplate = `-- robld: Script Sync prefs, folder tree, start-sync probe.
 local HttpService = game:GetService("HttpService")
 local PROJECT = @@PROJECT@@
 local ROOTS = HttpService:JSONDecode([==[@@ROOTS@@]==])
@@ -305,7 +305,7 @@ func installRobuildPlugin() (string, bool) {
 	}
 	src, err := renderPluginSource()
 	if err != nil {
-		warn("Could not render robuild plugin: %v", err)
+		warn("Could not render robld plugin: %v", err)
 		return "", false
 	}
 	path := filepath.Join(dir, pluginFileName)

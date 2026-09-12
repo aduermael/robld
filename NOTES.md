@@ -22,7 +22,7 @@ Script Sync will sync **Script, LocalScript, ModuleScript, Folder** only. Script
 
 ---
 
-## CLI flow (`./robuild`)
+## CLI flow (`./robld`)
 
 1. Write MCP config (`.mcp.json`, `.grok/config.toml`, `.codex/config.toml`).
 2. Ensure `robuild-sync.json` (do not overwrite a custom map; migrate the old generated Folder map — see below).
@@ -35,7 +35,7 @@ Script Sync will sync **Script, LocalScript, ModuleScript, Folder** only. Script
 
 Exit `0` READY, `1` NEED_PLACE/ERROR, `2` NOT_READY (user must Sync to… once).
 
-`robuild save` (macOS): Accessibility keystrokes, File → Save / Cmd+S, then check `place.rbxlx` mtime. Does **not** restart Studio.
+`robld save` (macOS): Accessibility keystrokes, File → Save / Cmd+S, then check `place.rbxlx` mtime. Does **not** restart Studio.
 
 ---
 
@@ -51,7 +51,7 @@ Item class `Studio`, properties:
 | `DefaultScriptSyncFileType` | `1` | `.luau` |
 | `ReloadLocalPluginsOnChange` | `true` | so `robuild_agent.lua` reloads |
 
-`robuild prefs` / `robuild prefs apply`. Main `robuild` applies the same set when it **launches** Studio.
+`robld prefs` / `robld prefs apply`. Main `robld` applies the same set when it **launches** Studio.
 
 A user plugin **cannot** set most of these at runtime (`lacking capability RobloxScript` / `RobloxEngine`). XML patch is the real write. `ActionOnStopSync` did succeed from the plugin once; do not rely on that.
 
@@ -179,7 +179,7 @@ Default `robuild-sync.json` therefore maps **services**, not nested Folders:
 | `src/shared` | `ReplicatedStorage` |
 | `src/client` | `StarterPlayer.StarterPlayerScripts` |
 
-The old generated map (`ServerScriptService.src` ↔ `src/server`, etc.) is rewritten in place when `robuild` sees that exact triple (`migrateLegacyGreenfieldMap`). Custom maps are left alone.
+The old generated map (`ServerScriptService.src` ↔ `src/server`, etc.) is rewritten in place when `robld` sees that exact triple (`migrateLegacyGreenfieldMap`). Custom maps are left alone.
 
 KeepLocal + service bind **flattens** the DataModel to match disk: extra `src` / `shared` Folders under the service go away; `Hello.luau` becomes `ReplicatedStorage.Hello`. **Cmd+S** after first successful resume so `place.rbxlx` matches. Until then git still has the old Folders.
 
@@ -245,7 +245,7 @@ Probing `StartSync` / friends on `InstanceFileSyncService` found no callable sta
 
 ---
 
-## How `robuild` knows sync started
+## How `robld` knows sync started
 
 Wait loop (~90s, poll 3s):
 
@@ -259,7 +259,7 @@ READY on the overwrite warning is what unblocked the successful run (`Studio log
 
 ---
 
-## Dump (`./robuild dump`)
+## Dump (`./robld dump`)
 
 Copies into `robuild-dump/`: newest Studio logs (force-copy, not keyword-gated), GlobalSettings, rbx-storage, plists, plugin lua, plugin settings, placeIDEState, REPORT.txt.
 
@@ -317,4 +317,4 @@ Relevant True flags (not a complete list):
 4. Do not `Wait()` on `game.Loaded` in the plugin.
 5. Treat `overwriting N synced hierarchies` as READY; do not require a parseable `ROBUILD_JSON`.
 6. After first KeepLocal resume, **Save** so `place.rbxlx` matches disk.
-7. `robuild dump` after any sync mystery; read `REPORT.txt` plus the newest `*Studio*_last.log`.
+7. `robld dump` after any sync mystery; read `REPORT.txt` plus the newest `*Studio*_last.log`.

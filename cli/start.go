@@ -27,7 +27,7 @@ const (
 	exitReady = 0
 	exitError = 1
 	exitRetry = 2
-	userAgent = "robuild/1.0"
+	userAgent = "robld/1.0"
 )
 
 var (
@@ -144,7 +144,7 @@ func bootStudio(studio string, p place) {
 		bestEffortStudioSave()
 		if err := quitStudio(); err != nil {
 			warn("%v", err)
-			warn("Quit Studio, then re-run robuild.")
+			warn("Quit Studio, then re-run robld.")
 		} else {
 			running = false
 			time.Sleep(time.Second)
@@ -213,17 +213,17 @@ func hasProjectMarker(dir string) bool {
 }
 
 func usage() string {
-	return "Usage: robuild [place-id-or-url]\n" +
-		"       robuild --new [\"Game Name\"]\n" +
-		"       robuild --file place.rbxlx\n" +
-		"       robuild save\n" +
-		"       robuild prefs\n" +
-		"       robuild prefs apply\n" +
-		"       robuild scan\n" +
-		"       robuild dump\n\n" +
+	return "Usage: robld [place-id-or-url]\n" +
+		"       robld --new [\"Game Name\"]\n" +
+		"       robld --file place.rbxlx\n" +
+		"       robld save\n" +
+		"       robld prefs\n" +
+		"       robld prefs apply\n" +
+		"       robld scan\n" +
+		"       robld dump\n\n" +
 		"Re-run until READY. Stateful: ids are stored in place.json.\n" +
 		"save (macOS): focus Studio and Cmd+S so place.rbxlx updates. No restart.\n" +
-		"prefs: show this machine's Script Sync Studio Settings. Main robuild also writes them.\n" +
+		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +
 		"Exit 0 = ready, 1 = error, 2 = waiting on Script Sync in Studio.\n"
 }
@@ -253,7 +253,7 @@ func parseArgs(args []string) options {
 		case strings.HasPrefix(arg, "--file="):
 			opts.localFile = strings.TrimPrefix(arg, "--file=")
 		case strings.HasPrefix(arg, "-"):
-			fail(exitError, "Unknown flag: %s\nTry robuild --help", arg)
+			fail(exitError, "Unknown flag: %s\nTry robld --help", arg)
 		default:
 			rest = append(rest, arg)
 		}
@@ -264,7 +264,7 @@ func parseArgs(args []string) options {
 			opts.cmd = "save"
 			rest = rest[1:]
 			if len(rest) > 0 {
-				fail(exitError, "ERROR: robuild save takes no extra arguments")
+				fail(exitError, "ERROR: robld save takes no extra arguments")
 			}
 			return opts
 		case "prefs":
@@ -274,7 +274,7 @@ func parseArgs(args []string) options {
 				return opts
 			}
 			if rest[0] != "apply" || len(rest) != 1 {
-				fail(exitError, "ERROR: unknown prefs usage.\nUse: robuild prefs\n     robuild prefs apply")
+				fail(exitError, "ERROR: unknown prefs usage.\nUse: robld prefs\n     robld prefs apply")
 			}
 			opts.prefsAction = "apply"
 			return opts
@@ -282,14 +282,14 @@ func parseArgs(args []string) options {
 			opts.cmd = "scan"
 			rest = rest[1:]
 			if len(rest) > 0 {
-				fail(exitError, "ERROR: robuild scan takes no extra arguments")
+				fail(exitError, "ERROR: robld scan takes no extra arguments")
 			}
 			return opts
 		case "dump":
 			opts.cmd = "dump"
 			rest = rest[1:]
 			if len(rest) > 0 {
-				fail(exitError, "ERROR: robuild dump takes no extra arguments")
+				fail(exitError, "ERROR: robld dump takes no extra arguments")
 			}
 			return opts
 		}
@@ -297,7 +297,7 @@ func parseArgs(args []string) options {
 	joined := strings.Join(rest, " ")
 	if opts.newPlace {
 		if looksLikePlaceRef(joined) {
-			fail(exitError, "ERROR: --new does not take a place id or URL.\nUse robuild --new [\"Game Name\"]")
+			fail(exitError, "ERROR: --new does not take a place id or URL.\nUse robld --new [\"Game Name\"]")
 		}
 		if opts.newName == "" {
 			opts.newName = joined
@@ -481,11 +481,11 @@ func resolvePlace(cliTarget, localFile string) place {
 	savePlace(data)
 	if data.PlaceID == 0 || data.UniverseID == 0 {
 		fmt.Print("NEED_PLACE: pass a place id or game URL, or create a local place.\n" +
-			"  robuild --new\n" +
-			"  robuild --new \"My Game\"\n" +
-			"  robuild 123456789\n" +
-			"  robuild https://www.roblox.com/games/123456789/My-Game\n" +
-			"  robuild --file place.rbxlx\n")
+			"  robld --new\n" +
+			"  robld --new \"My Game\"\n" +
+			"  robld 123456789\n" +
+			"  robld https://www.roblox.com/games/123456789/My-Game\n" +
+			"  robld --file place.rbxlx\n")
 		os.Exit(exitError)
 	}
 	return data

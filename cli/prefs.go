@@ -12,7 +12,7 @@ import (
 
 // Script Sync UI settings live on this machine in Studio's GlobalSettings XML
 // (rbxmx), not in place.rbxlx. Per-place Sync-to-folder bindings are a
-// different store — see robuild scan.
+// different store — see robld scan.
 
 type studioPref struct {
 	UI     string
@@ -67,7 +67,7 @@ var scriptSyncPrefs = []studioPref{
 	},
 }
 
-// Extra Studio properties that make the robuild plugin usable without a restart.
+// Extra Studio properties that make the robld plugin usable without a restart.
 var extraStudioPrefs = []studioPref{
 	{
 		UI:   "Reload local plugins on change",
@@ -117,17 +117,17 @@ func runPrefs(action string) {
 		if prefsNeedApply(values) {
 			fmt.Println()
 			if running {
-				fmt.Println("NOT_READY: close Roblox Studio, then:  robuild prefs apply")
+				fmt.Println("NOT_READY: close Roblox Studio, then:  robld prefs apply")
 				fmt.Println("Studio writes this file on quit, so a patch while it is open will not stick.")
 				os.Exit(exitRetry)
 			}
-			fmt.Println("To write the agent defaults:  robuild prefs apply")
+			fmt.Println("To write the agent defaults:  robld prefs apply")
 		}
 		return
 	case "apply":
 		if running {
 			fmt.Println()
-			fmt.Println("NOT_READY: close Roblox Studio, then re-run:  robuild prefs apply")
+			fmt.Println("NOT_READY: close Roblox Studio, then re-run:  robld prefs apply")
 			fmt.Println("Studio overwrites GlobalSettings_13.xml on quit.")
 			os.Exit(exitRetry)
 		}
@@ -146,10 +146,10 @@ func runPrefs(action string) {
 		fmt.Println()
 		fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": wrote Script Sync prefs"))
 		fmt.Printf("  %s\n", path)
-		fmt.Println("  backup: " + path + ".robuild-bak")
+		fmt.Println("  backup: " + path + ".robld-bak")
 		fmt.Println("These do not restore per-place Sync to… folder bindings.")
 	default:
-		fail(exitError, "Unknown prefs action %q. Use: robuild prefs | robuild prefs apply", action)
+		fail(exitError, "Unknown prefs action %q. Use: robld prefs | robld prefs apply", action)
 	}
 }
 
@@ -278,7 +278,7 @@ func reportScriptSyncPrefsBrief() {
 	}
 	warn("Script Sync prefs in %s are not agent defaults.", path)
 	warn("If you just changed them in Studio, they land in this file when Studio quits.")
-	warn("Otherwise close Studio and run:  robuild prefs apply")
+	warn("Otherwise close Studio and run:  robld prefs apply")
 }
 
 func studioSettingsDirs() []string {
@@ -487,10 +487,10 @@ func replaceFile(path string, data []byte) error {
 		mode = st.Mode()
 		orig, readErr := os.ReadFile(path)
 		if readErr == nil {
-			_ = os.WriteFile(path+".robuild-bak", orig, mode)
+			_ = os.WriteFile(path+".robld-bak", orig, mode)
 		}
 	}
-	tmp := path + ".robuild-tmp"
+	tmp := path + ".robld-tmp"
 	if err := os.WriteFile(tmp, data, mode); err != nil {
 		return err
 	}

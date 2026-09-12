@@ -1,5 +1,9 @@
 # built binaries
+/robld
 /robuild
+/robld.exe
+/cli/robld
+/cli/robld.exe
 /robuild.exe
 /scriptsync
 /scriptsync.exe
