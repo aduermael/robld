@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build binaries
+        working-directory: cli
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          build() {
+            local goos="$1" goarch="$2" out="$3"
+            echo "building $out"
+            CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
+              go build -trimpath -ldflags='-s -w' -o "dist/$out" .
+          }
+          build darwin arm64 robld-darwin-arm64
+          build darwin amd64 robld-darwin-amd64
+          build linux arm64 robld-linux-arm64
+          build linux amd64 robld-linux-amd64
+          build windows amd64 robld-windows-amd64.exe
+          ls -la dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            cli/dist/robld-darwin-arm64
+            cli/dist/robld-darwin-amd64
+            cli/dist/robld-linux-arm64
+            cli/dist/robld-linux-amd64
+            cli/dist/robld-windows-amd64.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
