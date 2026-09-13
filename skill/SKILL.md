@@ -16,12 +16,12 @@ The skill in this folder is the how-to. If it is missing in a project, run `robl
 
 ## CLI
 
-`robld` should already be on PATH (install from https://robld.com/). Run it from the game folder. Same command every time. If you download robld, verify the sha256 against https://robld.com/releases/latest.json.
+`robld` should already be on PATH (install from https://robld.com/). Run it from the game folder. Same command every time.
 
 | Command | What it does |
 |---|---|
 | `robld` | Open the place in `place.json`, wait until Script Sync + MCP are up. Re-run until `READY:`. |
-| `robld --new` / `robld --new "Name"` | Create a local `place.rbxlx` and `place.json`, then launch Studio. |
+| `robld --new` / `robld --new "Name"` | Create a local `place.rbxlx` and `place.json` (UniqueIds seeded), then launch Studio. |
 | `robld <place-id-or-url>` | Bind an existing cloud place (or `robld --file place.rbxlx`). |
 | `robld --install` | Write this skill into the current project (Claude, Grok, Codex, Cursor, `.agents`). |
 | `robld --version` | Print the version. |
@@ -45,7 +45,7 @@ Run `robld` from the game folder. Pass ids as args; do not prompt. Do not start 
 | 1 `ERROR:` | Show the message (usually Studio missing). Do not invent a connection. |
 | 2 `NOT_READY:` | Show the printed Sync to… steps. After the user does them, re-run `robld`. |
 
-Studio is required (macOS or Windows). If `robld` says Studio was not found, stop.
+Studio is required (macOS or Windows). If `robld` says Studio was not found, stop. If Studio shows a login window, the user must sign in, then re-run `robld`.
 
 Script Sync **preferences** are per-machine; main `robld` writes them and may restart Studio. **`robuild-sync.json`** is the per-project folder map — honor it; games are not all `ServerScriptService/` on disk. Do not overwrite a custom map. The generated default maps `src/server|shared|client` to **services** (that is what Studio auto-resumes). New Luau goes next to existing siblings. Do not start Sync to… from MCP. If `robld` exits `NOT_READY`, show the printed Sync to… paths. `robld dump` → read `robuild-dump/REPORT.txt` and `rbx-storage.txt`.
 
@@ -120,7 +120,7 @@ The main `robld` command also:
 
 - Writes **`robuild-sync.json`**. For an empty repo it seeds `src/server`, `src/shared`, `src/client` mapped to **Studio services** (`ServerScriptService`, `ReplicatedStorage`, `StarterPlayer.StarterPlayerScripts`). Studio auto-resume binds those service UniqueIds; nested Folder records in the plist do not start sync.
 - Installs a Studio plugin that creates missing scripts under those services and prints `ROBUILD_JSON` for `robld` to wait on.
-- When Studio is **closed**, writes Script Sync **resume records** into Studio preferences (service UniqueId ↔ disk path) so the next open can auto-resume without Sync to… in the UI.
+- When Studio is **closed**, writes Script Sync **resume records** into Studio preferences (service UniqueId ↔ disk path) so the next open can auto-resume without Sync to… in the UI. `robld --new` seeds those UniqueIds in `place.rbxlx` so the first macOS launch can resume.
 
 Conflict dialog: **Keep Disk** = this repo wins; **Keep Studio** = the place wins.
 

@@ -153,7 +153,8 @@ func bootStudio(studio string, p place) {
 	running := studioRunning(studio)
 	needPrefs := studioPrefsNeedApply()
 	needPersist := persistNeedsWrite(p)
-	if running && (needPrefs || pluginChanged || needPersist) {
+	needUniqueIds := placeNeedsUniqueIds(p)
+	if running && (needPrefs || pluginChanged || needPersist || needUniqueIds) {
 		info("Restarting Roblox Studio so Script Sync prefs, plugin, and resume records apply.")
 		bestEffortStudioSave()
 		if err := quitStudio(); err != nil {
@@ -170,6 +171,9 @@ func bootStudio(studio string, p place) {
 		return
 	}
 	applyScriptSyncPrefsIfNeeded()
+	if err := ensurePlaceUniqueIds(p); err != nil {
+		warn("Could not seed UniqueIds: %v", err)
+	}
 	if err := applyFileSyncPersistence(p); err != nil {
 		warn("Could not write Script Sync resume records yet: %v", err)
 	} else {

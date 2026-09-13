@@ -33,3 +33,15 @@ func TestDumpWritesReport(t *testing.T) {
 		}
 	}
 }
+
+func TestDumpDirNeverEmpty(t *testing.T) {
+	t.Setenv("ROBUILD_DUMP_DIR", "")
+	root = t.TempDir()
+	got := dumpDir()
+	if got == "" {
+		t.Fatal("dumpDir() is never supposed to be empty; bootStudio always calls inspectRbxStorage")
+	}
+	if !strings.Contains(got, dumpFolderName) {
+		t.Fatalf("dumpDir()=%q want default folder %q", got, dumpFolderName)
+	}
+}

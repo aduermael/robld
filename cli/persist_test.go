@@ -87,9 +87,15 @@ func TestParsePlaceInstances(t *testing.T) {
 }
 
 func TestParseRepoPlaceServiceRoots(t *testing.T) {
-	path := "place.rbxlx"
-	if _, err := os.Stat(path); err != nil {
-		t.Skip("no place.rbxlx in module root")
+	path := ""
+	for _, cand := range []string{"place.rbxlx", filepath.Join("..", "place.rbxlx")} {
+		if _, err := os.Stat(cand); err == nil {
+			path = cand
+			break
+		}
+	}
+	if path == "" {
+		t.Skip("no place.rbxlx in module root or repo root")
 	}
 	ws, byPath, err := parsePlaceInstances(path)
 	if err != nil {
@@ -111,5 +117,43 @@ func TestParseRepoPlaceServiceRoots(t *testing.T) {
 		if !strings.HasPrefix(uniqueIDToUUID(inst.UniqueID), "684fc65d-") {
 			t.Fatalf("%s uuid %s", path, uniqueIDToUUID(inst.UniqueID))
 		}
+	}
+}
+
+// --new writes minimalPlaceXML, which has service instances but no UniqueIds.
+// persist reads UniqueIds from the file, so first launch cannot write resume records.
+func TestMinimalPlaceXMLHasNoUniqueId(t *testing.T) {
+	if !strings.Contains(minimalPlaceXML, `class="Workspace"`) {
+		t.Fatal("minimalPlaceXML is not the --new template")
+	}
+	if strings.Contains(minimalPlaceXML, `<UniqueId name="UniqueId">`) {
+		t.Fatal("minimalPlaceXML must not contain UniqueId properties")
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "place.rbxlx")
+	if err := os.WriteFile(path, []byte(minimalPlaceXML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ws, byPath, err := parsePlaceInstances(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ws != "" {
+		t.Fatalf("parsePlaceInstances workspace uid %q; --new template should have none", ws)
+	}
+	if len(byPath) != 0 {
+		t.Fatalf("parsePlaceInstances indexed %d instances with UniqueIds: %+v", len(byPath), byPath)
+	}
+
+	_, _, _, err = desiredSyncBindings(place{LocalPlaceFile: path})
+	if err == nil {
+		t.Fatal("desiredSyncBindings succeeded on --new XML")
+	}
+	if !strings.Contains(err.Error(), "no Workspace UniqueId") {
+		t.Fatalf("desiredSyncBindings err=%v", err)
+	}
+	if persistNeedsWrite(place{LocalPlaceFile: path}) {
+		t.Fatal("persistNeedsWrite must be false when desiredSyncBindings fails (bootStudio will skip persist)")
 	}
 }

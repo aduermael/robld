@@ -198,6 +198,8 @@ If the user Sync to… **ReplicatedStorage** into a folder also named `Replicate
 
 First launch can persist **without** a prior Save because SSS/RS/SPS already exist in a normal place. Nested Folders needed plugin-create → Save → second launch; that path is obsolete for the default map.
 
+`--new` writes `minimalPlaceXML` without UniqueIds, then `injectMissingUniqueIds` adds rbx-dom XML UniqueIds (shared 8-byte random, time since 2021-01-01 UTC, incrementing index) to every Properties block so persist can run on the first launch. `ensurePlaceUniqueIds` does the same for an existing UniqueId-less `.rbxlx` while Studio is closed.
+
 ---
 
 ## Paths and symlinks

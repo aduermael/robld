@@ -28,7 +28,7 @@ robld --new "My Game"
 robld
 ```
 
-Windows is the same command (`robld`).
+Windows is the same command (`robld`). On macOS, `--new` seeds UniqueIds so the first launch can auto-resume Script Sync. Exit 2 still means do **Sync to…** once (Windows, or if resume did not bind).
 
 | Exit | Meaning |
 |---|---|

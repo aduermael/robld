@@ -9,6 +9,8 @@ import (
 const defaultPlaceFile = "place.rbxlx"
 
 // Minimal place Studio will open. Script services exist so Sync to… has targets.
+// UniqueIds are injected at write time (injectMissingUniqueIds) so macOS can
+// write Script Sync resume records on the first launch.
 const minimalPlaceXML = `<?xml version="1.0" encoding="utf-8"?>
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<Item class="Workspace" referent="RBXWORKSPACE">
@@ -140,7 +142,11 @@ func createNewPlace(name, file string) place {
 	if st, err := os.Stat(abs); err == nil && !st.IsDir() {
 		info("Reusing existing %s", abs)
 	} else {
-		if err := os.WriteFile(abs, []byte(minimalPlaceXML), 0o644); err != nil {
+		body, err := newPlaceXML()
+		if err != nil {
+			fail(exitError, "ERROR: could not create place file:\n  %s\n  %v", abs, err)
+		}
+		if err := os.WriteFile(abs, []byte(body), 0o644); err != nil {
 			fail(exitError, "ERROR: could not create place file:\n  %s\n  %v", abs, err)
 		}
 		info("Created local place %s", abs)

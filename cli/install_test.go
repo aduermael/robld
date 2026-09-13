@@ -22,6 +22,7 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 		"READY:",
 		"NEED_PLACE:",
 		"NOT_READY:",
+		"UniqueId",
 	} {
 		if !strings.Contains(body, need) {
 			t.Errorf("embedded skill missing %q", need)
