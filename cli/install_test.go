@@ -38,5 +38,8 @@ func TestRunInstallWritesSkills(t *testing.T) {
 		if !strings.Contains(string(raw), "Script Sync") {
 			t.Fatalf("%s missing Script Sync", rel)
 		}
+		if !strings.Contains(string(raw), "git init") {
+			t.Fatalf("%s missing git init guidance", rel)
+		}
 	}
 }

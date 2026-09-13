@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>robld — Robuild</title>
-  <meta name="description" content="Agent-first Roblox. Install robld with one prompt for Claude Code, Codex, or Grok Build.">
+  <title>Roblox for agents — robld</title>
+  <meta name="description" content="Ultimate tooling for your agent (Claude Code, Codex, Grok Build, etc.) to work on Roblox games like a pro.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -69,10 +69,13 @@
     .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      align-items: center;
+      gap: 10px 16px;
       margin-top: 12px;
     }
-    button, .btn {
+    .card.is-collapsed pre { display: none; }
+    .card.is-collapsed .actions { margin-top: 0; }
+    button {
       appearance: none;
       border: 0;
       border-radius: 10px;
@@ -85,17 +88,21 @@
       align-items: center;
       gap: 8px;
     }
-    button.primary, .btn.primary {
+    button.primary {
       background: var(--accent);
       color: #fff;
     }
-    button.primary:hover, .btn.primary:hover { filter: brightness(1.05); }
-    button.ghost, .btn.ghost {
-      background: transparent;
-      color: var(--ink);
-      border: 1px solid var(--line);
+    button.primary:hover { filter: brightness(1.05); }
+    button.text {
+      background: none;
+      border: 0;
+      padding: 10px 2px;
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.95rem;
     }
-    .ok { color: var(--accent); font-size: 0.9rem; min-height: 1.2em; }
+    button.text:hover { color: var(--ink); }
+    #copy { min-width: 12.5em; justify-content: center; }
     ol.steps {
       margin: 0;
       padding-left: 1.2em;
@@ -122,14 +129,14 @@
     <header>
       <div class="mark">robld</div>
       <h1>Roblox for agents.</h1>
-      <p class="lead">Luau on disk. Place file in git. Studio MCP for playtest and the world. One CLI that gets Script Sync ready so your agent can actually work.</p>
+      <p class="lead">Ultimate tooling for your agent (Claude Code, Codex, Grok Build, etc.) to work on Roblox games like a pro.</p>
       <p class="pronounce">CLI: <code>robld</code> · pronounced <em>robuild</em></p>
     </header>
 
     <section>
       <h2>Install</h2>
       <p style="color:var(--muted);margin:0 0 12px">Copy this prompt into Claude Code, Codex, Grok Build, Cursor, or any coding agent. That is the whole install.</p>
-      <div class="card">
+      <div class="card" id="prompt-card">
         <pre id="prompt">Install robld (Robuild — agent-first Roblox CLI) on this machine, then set up this project folder.
 
 1. Detect OS and CPU arch.
@@ -149,45 +156,55 @@
 
 Do not ask me to run these steps by hand unless a permission dialog needs a human. Prefer the release binary over building from source.</pre>
         <div class="actions">
-          <button class="primary" type="button" id="copy">Copy install prompt</button>
-          <a class="btn ghost" href="https://github.com/aduermael/robld">GitHub</a>
+          <button class="primary" type="button" id="copy" aria-live="polite">Copy install prompt</button>
+          <button class="text" type="button" id="toggle" aria-expanded="true" aria-controls="prompt">hide prompt</button>
         </div>
-        <div class="ok" id="copied" aria-live="polite"></div>
       </div>
     </section>
 
     <section>
-      <h2>What that does</h2>
+      <h2>What it does</h2>
       <ol class="steps">
-        <li>Puts <code>robld</code> on your PATH from the latest release.</li>
-        <li><code>robld --install</code> drops the Roblox skill into this folder for the common agents.</li>
-        <li>Then: <code>robld --new "My Game"</code> and re-run <code>robld</code> until it prints <code>READY</code>.</li>
+        <li>Installs <code>robld</code> — the command-line interface your agent uses to work efficiently with Roblox Studio.</li>
+        <li>Your agent calls <code>robld --install</code> once to install the skill.</li>
+        <li>That's it. Start prompting your agent to create or work on a game in the current folder.</li>
       </ol>
     </section>
 
     <footer>
-      Docs in the repo: <a href="https://github.com/aduermael/robld/blob/main/START.md">START.md</a>
-      · <a href="https://github.com/aduermael/robld/blob/main/README.md">README</a>
-      · <a href="https://github.com/aduermael/robld/releases">Releases</a>
+      <a href="https://github.com/aduermael/robld">GitHub</a>
     </footer>
   </div>
   <script>
     const promptEl = document.getElementById("prompt");
-    const copied = document.getElementById("copied");
-    document.getElementById("copy").addEventListener("click", async () => {
+    const card = document.getElementById("prompt-card");
+    const copyBtn = document.getElementById("copy");
+    const toggle = document.getElementById("toggle");
+    const copyLabel = "Copy install prompt";
+    let copyTimer = 0;
+
+    copyBtn.addEventListener("click", async () => {
       const text = promptEl.textContent;
+      let ok = false;
       try {
         await navigator.clipboard.writeText(text);
-        copied.textContent = "Copied.";
+        ok = true;
       } catch (err) {
         const range = document.createRange();
         range.selectNodeContents(promptEl);
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
-        copied.textContent = "Select the prompt and copy (clipboard blocked).";
       }
-      setTimeout(() => { copied.textContent = ""; }, 2500);
+      copyBtn.textContent = ok ? "Copied!" : "Select and copy";
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => { copyBtn.textContent = copyLabel; }, 2000);
+    });
+
+    toggle.addEventListener("click", () => {
+      const collapsed = card.classList.toggle("is-collapsed");
+      toggle.textContent = collapsed ? "show prompt" : "hide prompt";
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     });
   </script>
 </body>

@@ -27,6 +27,10 @@ Do not try to start Script Sync from MCP or Luau. Pass ids as args; do not promp
 
 Script Sync **preferences** are per-machine; main `robld` writes them and may restart Studio. **`robuild-sync.json`** is the per-project folder map — honor it; games are not all `ServerScriptService/` on disk. Do not overwrite a custom map. The generated default maps `src/server|shared|client` to **services** (that is what Studio auto-resumes). New Luau goes next to existing siblings. Do not start Sync to… from MCP. If `robld` exits `NOT_READY`, show the printed Sync to… paths. `robld dump` → read `robuild-dump/REPORT.txt` and `rbx-storage.txt`.
 
+## Git
+
+If `git` is installed and this folder is not already a git repository, run `git init` and make an initial commit. History and versioning help a lot with any code project. Commit often as you work (Luau, `place.rbxlx`, and other project files). Do not force-push or rewrite history unless asked.
+
 ## What lives where
 
 - **Luau:** files in this tree (Script Sync). Create/edit/delete on disk only.
