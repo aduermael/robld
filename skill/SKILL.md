@@ -16,7 +16,7 @@ The skill in this folder is the how-to. If it is missing in a project, run `robl
 
 ## CLI
 
-`robld` should already be on PATH (install from https://robld.com/). Run it from the game folder. Same command every time.
+`robld` should already be on PATH (install from https://robld.com/). Run it from the game folder. Same command every time. If you download robld, verify the sha256 against https://robld.com/releases/latest.json.
 
 | Command | What it does |
 |---|---|
