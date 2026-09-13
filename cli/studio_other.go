@@ -17,7 +17,10 @@ func saveAndQuitStudio(p place) error {
 		Quit: func(time.Duration) error {
 			return fmt.Errorf("automatic Studio restart is macOS-only for now")
 		},
-		Enter:   func() error { return nil },
+		Enter: func() error { return nil },
+		Kill: func(time.Duration) error {
+			return fmt.Errorf("automatic Studio restart is macOS-only for now")
+		},
 		Running: func() bool { return true },
 	})
 }

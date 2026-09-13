@@ -94,6 +94,6 @@ func waitPlaceChanged(path string, before time.Time, beforeSize int64, wait time
 	}
 }
 
-func saveDialogNeedUserMessage() string {
-	return "NEED_USER: Roblox Studio did not quit. A Save / Don't Save / Cancel dialog is likely in front of Studio. Click Save (for a local place), then I will continue."
+func studioStuckNeedUserMessage() string {
+	return "NEED_USER: Roblox Studio would not quit even after a force quit."
 }

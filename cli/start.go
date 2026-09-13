@@ -159,7 +159,7 @@ func bootStudio(studio string, p place, newPlace bool) {
 	if studioNeedsRestart(running, needs) {
 		info("Restarting Roblox Studio so Script Sync prefs, plugin, and resume records apply.")
 		if err := saveAndQuitStudio(p); err != nil {
-			fmt.Println(saveDialogNeedUserMessage())
+			fmt.Println(studioStuckNeedUserMessage())
 			os.Exit(exitRetry)
 		}
 		running = false

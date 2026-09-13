@@ -22,8 +22,9 @@ These are the only human steps. Name the UI; do not invite them to run CLI.
 
 1. **Studio login** if Studio shows a sign-in window.
 2. **Assistant → … → Manage MCP Servers → enable Studio as MCP server** (once per machine).
-3. **Save / Don't Save / Cancel** if that dialog appears while Studio is restarting — click **Save** for a local place.
-4. **Accessibility** for the app that launches robld (menus, save, F5). **Screen Recording** too if you need screenshots (`screencapture` / MCP `screen_capture`).
+3. **Accessibility** for the app that launches robld (menus, save, F5). **Screen Recording** too if you need screenshots (`screencapture` / MCP `screen_capture`).
+
+Do not ask the user to click **Save / Don't Save / Cancel** on restart. robld saves, sends Enter, waits, then force-quits if Studio is still up.
 
 ## CLI (you run this; do not paste it at the user)
 
@@ -56,7 +57,6 @@ You run `robld` from the game folder. Pass ids as args; do not prompt. Do not st
 | 1 `NEED_PLACE:` | Create a local place or bind a place id / game URL. Re-run. |
 | 1 `ERROR:` | Show the message (usually Studio missing). Do not invent a connection. |
 | 2 `NOT_READY:` | Show the printed Sync to… steps. After the user does them, re-run. |
-| 2 `NEED_USER:` with **Save / Don't Save / Cancel** | The user must click **Save**. Then you continue. |
 
 Studio is required (macOS or Windows). If Studio was not found, stop. If Studio shows a login window, the user must sign in, then you continue.
 
@@ -144,7 +144,7 @@ There is no Test menu item named **Play**.
 
 Studio Settings → Script Sync are **not** in `place.rbxlx`. They live in Studio’s `GlobalSettings_13.xml` (macOS `~/Library/Roblox/`, Windows `%LOCALAPPDATA%\Roblox\`).
 
-`robld` applies agent defaults when it **launches** Studio (not when Studio is already open, unless a restart is required). Defaults:
+`robld` applies agent defaults when it **launches** Studio (not when Studio is already open, unless a restart is required). Before a required quit it sends File → **Save to File**, Enter for a Save dialog, then force-quits if still stuck. Defaults:
 
 | Setting | Value |
 |---|---|

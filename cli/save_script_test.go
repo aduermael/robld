@@ -53,12 +53,13 @@ func TestStudioReturnScript(t *testing.T) {
 	}
 }
 
-func TestSaveDialogNeedUserMessage(t *testing.T) {
-	msg := saveDialogNeedUserMessage()
-	for _, part := range []string{"NEED_USER:", "Save / Don't Save / Cancel", "Save"} {
-		if !strings.Contains(msg, part) {
-			t.Fatalf("missing %q in %q", part, msg)
-		}
+func TestStudioStuckNeedUserMessage(t *testing.T) {
+	msg := studioStuckNeedUserMessage()
+	if !strings.Contains(msg, "NEED_USER:") {
+		t.Fatalf("missing NEED_USER: in %q", msg)
+	}
+	if strings.Contains(msg, "Click Save") {
+		t.Fatalf("must not ask the user to click Save: %q", msg)
 	}
 }
 

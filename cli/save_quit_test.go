@@ -12,15 +12,23 @@ func TestSaveQuitPlanOrder(t *testing.T) {
 	plan := saveQuitPlan()
 	var names []string
 	var quitWaits []time.Duration
-	for _, s := range plan {
+	var pkillWait time.Duration
+	enterAt, pkillAt := -1, -1
+	for i, s := range plan {
 		names = append(names, s.Name)
-		if strings.Contains(strings.ToLower(s.Name), "pkill") {
-			t.Fatal("save/quit plan must not pkill while a Save dialog may be up")
-		}
-		if s.Name == saveQuitStepGracefulQuit {
+		switch s.Name {
+		case saveQuitStepGracefulQuit:
 			quitWaits = append(quitWaits, s.Wait)
 			if !s.StopIfOK {
 				t.Fatal("graceful quit must stop the plan if Studio actually exited")
+			}
+		case saveQuitStepDelayedEnter:
+			enterAt = i
+		case saveQuitStepPkill:
+			pkillAt = i
+			pkillWait = s.Wait
+			if !s.StopIfOK {
+				t.Fatal("pkill must stop the plan if Studio exited")
 			}
 		}
 	}
@@ -29,10 +37,14 @@ func TestSaveQuitPlanOrder(t *testing.T) {
 		saveQuitStepGracefulQuit,
 		saveQuitStepDelayedEnter,
 		saveQuitStepGracefulQuit,
+		saveQuitStepPkill,
 		saveQuitStepNeedUser,
 	}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Fatalf("plan %v want %v", names, want)
+	}
+	if enterAt < 0 || pkillAt < 0 || pkillAt <= enterAt {
+		t.Fatalf("pkill must run after Enter so a Save dialog can flush: enter=%d pkill=%d", enterAt, pkillAt)
 	}
 	if len(quitWaits) != 2 {
 		t.Fatalf("expected two graceful quits, waits=%v", quitWaits)
@@ -41,7 +53,10 @@ func TestSaveQuitPlanOrder(t *testing.T) {
 		t.Fatalf("first graceful quit must be short so Enter can run: %s", quitWaits[0])
 	}
 	if quitWaits[1] <= quitWaits[0] {
-		t.Fatalf("second graceful quit should wait longer than the first: %v", quitWaits)
+		t.Fatalf("second graceful quit should wait longer (time to save): %v", quitWaits)
+	}
+	if pkillWait <= 0 {
+		t.Fatal("pkill must wait for Studio to die")
 	}
 }
 
@@ -63,6 +78,10 @@ func TestRunSaveQuitPlanStopsAfterFirstQuit(t *testing.T) {
 			calls = append(calls, saveQuitStepDelayedEnter)
 			return nil
 		},
+		Kill: func(wait time.Duration) error {
+			calls = append(calls, saveQuitStepPkill)
+			return nil
+		},
 		Running: func() bool { return false },
 	})
 	if err != nil {
@@ -70,7 +89,7 @@ func TestRunSaveQuitPlanStopsAfterFirstQuit(t *testing.T) {
 	}
 	got := strings.Join(calls, ",")
 	if got != saveQuitStepSave+","+saveQuitStepGracefulQuit {
-		t.Fatalf("Enter must not run after a successful graceful quit; got %s", got)
+		t.Fatalf("Enter/pkill must not run after a successful graceful quit; got %s", got)
 	}
 }
 
@@ -99,6 +118,11 @@ func TestRunSaveQuitPlanEnterThenSecondQuit(t *testing.T) {
 			calls = append(calls, saveQuitStepDelayedEnter)
 			return nil
 		},
+		Kill: func(wait time.Duration) error {
+			calls = append(calls, saveQuitStepPkill)
+			t.Fatal("pkill must not run if the second graceful quit succeeded")
+			return nil
+		},
 		Running: func() bool { return n < 2 },
 	})
 	if err != nil {
@@ -120,7 +144,53 @@ func TestRunSaveQuitPlanEnterThenSecondQuit(t *testing.T) {
 	}
 }
 
-func TestRunSaveQuitPlanNeedUserWhenStillRunning(t *testing.T) {
+func TestRunSaveQuitPlanPkillAfterEnter(t *testing.T) {
+	var calls []string
+	var killWait time.Duration
+	err := runSaveQuitPlan(saveQuitHooks{
+		Save: func() error {
+			calls = append(calls, saveQuitStepSave)
+			return nil
+		},
+		Quit: func(wait time.Duration) error {
+			calls = append(calls, saveQuitStepGracefulQuit)
+			return fmt.Errorf("dialog up")
+		},
+		Enter: func() error {
+			calls = append(calls, saveQuitStepDelayedEnter)
+			return nil
+		},
+		Kill: func(wait time.Duration) error {
+			if !strings.Contains(strings.Join(calls, ","), saveQuitStepDelayedEnter) {
+				t.Fatal("pkill must not run before Enter")
+			}
+			killWait = wait
+			calls = append(calls, saveQuitStepPkill)
+			return nil
+		},
+		Running: func() bool { return true },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(calls, ",")
+	want := strings.Join([]string{
+		saveQuitStepSave,
+		saveQuitStepGracefulQuit,
+		saveQuitStepDelayedEnter,
+		saveQuitStepGracefulQuit,
+		saveQuitStepPkill,
+	}, ",")
+	if got != want {
+		t.Fatalf("got %s want %s", got, want)
+	}
+	plan := saveQuitPlan()
+	if killWait != plan[4].Wait {
+		t.Fatalf("pkill wait %s want %s", killWait, plan[4].Wait)
+	}
+}
+
+func TestRunSaveQuitPlanNeedUserAfterPkillFails(t *testing.T) {
 	var calls []string
 	err := runSaveQuitPlan(saveQuitHooks{
 		Save: func() error {
@@ -135,10 +205,14 @@ func TestRunSaveQuitPlanNeedUserWhenStillRunning(t *testing.T) {
 			calls = append(calls, saveQuitStepDelayedEnter)
 			return nil
 		},
+		Kill: func(wait time.Duration) error {
+			calls = append(calls, saveQuitStepPkill)
+			return fmt.Errorf("pkill failed")
+		},
 		Running: func() bool { return true },
 	})
 	if !errors.Is(err, errStudioDidNotQuit) {
-		t.Fatalf("want errStudioDidNotQuit, got %v", err)
+		t.Fatalf("want errStudioDidNotQuit after pkill failed, got %v", err)
 	}
 	got := strings.Join(calls, ",")
 	want := strings.Join([]string{
@@ -146,13 +220,9 @@ func TestRunSaveQuitPlanNeedUserWhenStillRunning(t *testing.T) {
 		saveQuitStepGracefulQuit,
 		saveQuitStepDelayedEnter,
 		saveQuitStepGracefulQuit,
+		saveQuitStepPkill,
 	}, ",")
 	if got != want {
-		t.Fatalf("got %s want %s (pkill must not run)", got, want)
-	}
-	for _, c := range calls {
-		if strings.Contains(strings.ToLower(c), "pkill") {
-			t.Fatal("pkill must not be on the save-dialog path")
-		}
+		t.Fatalf("got %s want %s", got, want)
 	}
 }

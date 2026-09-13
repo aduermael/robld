@@ -45,7 +45,7 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 		"Screen Recording",
 		"open -a RobloxStudio",
 		"Manage MCP Servers",
-		"Save / Don't Save / Cancel",
+		"force-quits",
 		"key code 96",
 	} {
 		if !strings.Contains(body, need) {
