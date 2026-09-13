@@ -14,6 +14,10 @@ Roblox Studio is great for seeing the world. It is awkward as the source of trut
 
 Your agent does not fight the Studio UI to start sync. `robld` bootstraps prefs, the sync map, a small Studio plugin, and MCP config — then waits until the place is actually ready.
 
+## Install with an agent
+
+Open [aduermael.github.io/robld](https://aduermael.github.io/robld/), copy the install prompt, and paste it into Claude Code, Codex, Grok Build, or Cursor. That downloads the latest release onto PATH and runs `robld --install` in your project.
+
 ## Quick start
 
 ```bash

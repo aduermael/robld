@@ -65,7 +65,7 @@ type options struct {
 	localFile   string
 	newPlace    bool
 	newName     string
-	cmd         string // "", "save", "prefs", "scan", "dump"
+	cmd         string // "", "save", "prefs", "scan", "dump", "install"
 	prefsAction string // "" or "apply"
 }
 
@@ -100,6 +100,9 @@ func main() {
 		return
 	case "dump":
 		runDump()
+		return
+	case "install":
+		runInstall()
 		return
 	}
 
@@ -204,7 +207,7 @@ func findRoot() string {
 }
 
 func hasProjectMarker(dir string) bool {
-	for _, name := range []string{"place.json", "start.go", "go.mod"} {
+	for _, name := range []string{"place.json", "AGENTS.md", "robuild-sync.json", "cli/go.mod"} {
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return true
 		}
@@ -216,12 +219,14 @@ func usage() string {
 	return "Usage: robld [place-id-or-url]\n" +
 		"       robld --new [\"Game Name\"]\n" +
 		"       robld --file place.rbxlx\n" +
+		"       robld --install\n" +
 		"       robld save\n" +
 		"       robld prefs\n" +
 		"       robld prefs apply\n" +
 		"       robld scan\n" +
 		"       robld dump\n\n" +
 		"Re-run until READY. Stateful: ids are stored in place.json.\n" +
+		"--install: write the robld skill into this folder for Claude, Grok, Codex, Cursor.\n" +
 		"save (macOS): focus Studio and Cmd+S so place.rbxlx updates. No restart.\n" +
 		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +
@@ -239,6 +244,8 @@ func parseArgs(args []string) options {
 			os.Exit(0)
 		case arg == "--":
 			continue
+		case arg == "--install":
+			opts.cmd = "install"
 		case arg == "--new":
 			opts.newPlace = true
 		case strings.HasPrefix(arg, "--new="):
@@ -260,6 +267,13 @@ func parseArgs(args []string) options {
 	}
 	if len(rest) > 0 && !opts.newPlace {
 		switch rest[0] {
+		case "install":
+			opts.cmd = "install"
+			rest = rest[1:]
+			if len(rest) > 0 {
+				fail(exitError, "ERROR: robld --install takes no extra arguments")
+			}
+			return opts
 		case "save":
 			opts.cmd = "save"
 			rest = rest[1:]
@@ -293,6 +307,12 @@ func parseArgs(args []string) options {
 			}
 			return opts
 		}
+	}
+	if opts.cmd == "install" {
+		if len(rest) > 0 {
+			fail(exitError, "ERROR: robld --install takes no extra arguments")
+		}
+		return opts
 	}
 	joined := strings.Join(rest, " ")
 	if opts.newPlace {

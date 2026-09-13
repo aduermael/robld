@@ -1,6 +1,6 @@
 # Roblox agent workspace (robld)
 
-Run `robld` from the game folder until stdout contains `READY:`. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Non-interactive, re-runnable, state in `place.json`.
+If the skill is missing, run `robld --install`. Run `robld` from the game folder until stdout contains `READY:`. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Non-interactive, re-runnable, state in `place.json`.
 
 - Exit **0** `READY:` — Script Sync + MCP are up. Proceed.
 - Exit **1** `NEED_PLACE:` — `robld --new` / `robld --new "Name"`, or a place id / game URL. Re-run.

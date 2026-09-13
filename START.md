@@ -27,6 +27,8 @@ cd ..
 
 `go run . -- --new` from `cli/` works too; a built `robld` binary is the usual command.
 
+Prefer a release install: copy the prompt from https://aduermael.github.io/robld/ into your agent, then `robld --install` writes the skill into the current folder.
+
 ### Persist the world (macOS)
 
 MCP and Script Sync change the **open Studio session**, not `place.rbxlx`, until Studio saves. Official MCP cannot save to disk. `robld save` hacks that: it focuses Roblox Studio and sends **File → Save** (falls back to Cmd+S). No restart, no rewriting XML.

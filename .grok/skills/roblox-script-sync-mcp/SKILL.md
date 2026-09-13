@@ -12,7 +12,9 @@ description: >
 
 ## Bootstrap
 
-Run `robld` from the game folder. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Same command every time.
+`robld` should already be on PATH (agent install from https://aduermael.github.io/robld/). Run it from the game folder. Same command every time.
+
+If the skill is missing in this project, run `robld --install`.
 
 | Exit | What you do |
 |---|---|

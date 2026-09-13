@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>robld — Robuild</title>
+  <meta name="description" content="Agent-first Roblox. Install robld with one prompt for Claude Code, Codex, or Grok Build.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #e5e7eb;
+      --paper: #fafaf9;
+      --card: #ffffff;
+      --accent: #0f766e;
+      --accent-soft: #ccfbf1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+    header { margin-bottom: 40px; }
+    .mark {
+      display: inline-block;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 500;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      line-height: 1.1;
+      margin: 0 0 12px;
+      letter-spacing: -0.03em;
+    }
+    .lead { font-size: 1.125rem; color: var(--muted); margin: 0; max-width: 36em; }
+    .pronounce { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
+    section { margin: 36px 0; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; letter-spacing: -0.01em; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 0 rgba(17, 24, 39, 0.03);
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    button, .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button.primary, .btn.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover, .btn.primary:hover { filter: brightness(1.05); }
+    button.ghost, .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .ok { color: var(--accent); font-size: 0.9rem; min-height: 1.2em; }
+    ol.steps {
+      margin: 0;
+      padding-left: 1.2em;
+      color: var(--muted);
+    }
+    ol.steps li { margin: 0.4em 0; }
+    ol.steps code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.9em;
+      color: var(--ink);
+    }
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="mark">robld</div>
+      <h1>Roblox for agents.</h1>
+      <p class="lead">Luau on disk. Place file in git. Studio MCP for playtest and the world. One CLI that gets Script Sync ready so your agent can actually work.</p>
+      <p class="pronounce">CLI: <code>robld</code> · pronounced <em>robuild</em></p>
+    </header>
+
+    <section>
+      <h2>Install</h2>
+      <p style="color:var(--muted);margin:0 0 12px">Copy this prompt into Claude Code, Codex, Grok Build, Cursor, or any coding agent. That is the whole install.</p>
+      <div class="card">
+        <pre id="prompt">Install robld (Robuild — agent-first Roblox CLI) on this machine, then set up this project folder.
+
+1. Detect OS and CPU arch.
+2. Download the matching binary from the latest GitHub release of https://github.com/aduermael/robld
+   Asset names:
+   - robld-darwin-arm64
+   - robld-darwin-amd64
+   - robld-linux-arm64
+   - robld-linux-amd64
+   - robld-windows-amd64.exe
+   Use: https://github.com/aduermael/robld/releases/latest/download/<asset>
+3. Install it on PATH in the usual place for this OS:
+   - macOS / Linux: ~/.local/bin/robld (create the dir if needed; chmod +x)
+   - Windows: %LOCALAPPDATA%\Programs\robld\robld.exe and ensure that folder is on PATH
+4. From this project folder, run: robld --install
+5. Confirm `robld` works (`robld --help`) and that skill files exist under .claude/skills/robld, .grok/skills/robld, .agents/skills/robld, .cursor/skills/robld, and .codex/skills/robld.
+
+Do not ask me to run these steps by hand unless a permission dialog needs a human. Prefer the release binary over building from source.</pre>
+        <div class="actions">
+          <button class="primary" type="button" id="copy">Copy install prompt</button>
+          <a class="btn ghost" href="https://github.com/aduermael/robld">GitHub</a>
+        </div>
+        <div class="ok" id="copied" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>What that does</h2>
+      <ol class="steps">
+        <li>Puts <code>robld</code> on your PATH from the latest release.</li>
+        <li><code>robld --install</code> drops the Roblox skill into this folder for the common agents.</li>
+        <li>Then: <code>robld --new "My Game"</code> and re-run <code>robld</code> until it prints <code>READY</code>.</li>
+      </ol>
+    </section>
+
+    <footer>
+      Docs in the repo: <a href="https://github.com/aduermael/robld/blob/main/START.md">START.md</a>
+      · <a href="https://github.com/aduermael/robld/blob/main/README.md">README</a>
+      · <a href="https://github.com/aduermael/robld/releases">Releases</a>
+    </footer>
+  </div>
+  <script>
+    const promptEl = document.getElementById("prompt");
+    const copied = document.getElementById("copied");
+    document.getElementById("copy").addEventListener("click", async () => {
+      const text = promptEl.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied.textContent = "Copied.";
+      } catch (err) {
+        const range = document.createRange();
+        range.selectNodeContents(promptEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        copied.textContent = "Select the prompt and copy (clipboard blocked).";
+      }
+      setTimeout(() => { copied.textContent = ""; }, 2500);
+    });
+  </script>
+</body>
+</html>
