@@ -1,15 +1,13 @@
 package main
 
 import (
-	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-//go:embed skill/SKILL.md
-var embeddedSkill string
+	"robld/skill"
+)
 
 // Skill destinations for the agents people actually use with a project folder.
 var skillInstallPaths = []string{
@@ -20,36 +18,49 @@ var skillInstallPaths = []string{
 	".codex/skills/robld/SKILL.md",
 }
 
-func runInstall() {
-	body := strings.TrimSpace(embeddedSkill) + "\n"
-	if body == "\n" || embeddedSkill == "" {
-		fail(exitError, "ERROR: embedded skill is missing from this robld build")
-	}
-	root, err := os.Getwd()
-	if err != nil {
-		fail(exitError, "ERROR: %v", err)
+func skillBody() string {
+	return strings.TrimSpace(skill.Markdown) + "\n"
+}
+
+func installSkill(dest string) ([]string, error) {
+	body := skillBody()
+	if strings.TrimSpace(body) == "" {
+		return nil, fmt.Errorf("embedded skill is missing from this robld build")
 	}
 	var wrote []string
 	for _, rel := range skillInstallPaths {
-		path := filepath.Join(root, rel)
+		path := filepath.Join(dest, rel)
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			fail(exitError, "ERROR: %v", err)
+			return wrote, err
 		}
 		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
-			fail(exitError, "ERROR: could not write %s: %v", rel, err)
+			return wrote, fmt.Errorf("could not write %s: %w", rel, err)
 		}
 		wrote = append(wrote, rel)
 	}
-	agents := filepath.Join(root, "AGENTS.md")
+	agents := filepath.Join(dest, "AGENTS.md")
 	if _, err := os.Stat(agents); os.IsNotExist(err) {
 		note := "# Roblox agent workspace (robld)\n\n" +
 			"Run `robld` from this folder until stdout contains `READY:`.\n" +
+			"If the skill is missing, run `robld --install`. If a new version is available, run `robld --update`.\n" +
 			"Skill: `.claude/skills/robld/SKILL.md` (also installed for Grok, Codex, Cursor, and `.agents`).\n" +
 			"Full how-to: https://aduermael.github.io/robld/\n"
 		if err := os.WriteFile(agents, []byte(note), 0o644); err != nil {
-			fail(exitError, "ERROR: could not write AGENTS.md: %v", err)
+			return wrote, fmt.Errorf("could not write AGENTS.md: %w", err)
 		}
 		wrote = append(wrote, "AGENTS.md")
+	}
+	return wrote, nil
+}
+
+func runInstall() {
+	dest, err := os.Getwd()
+	if err != nil {
+		fail(exitError, "ERROR: %v", err)
+	}
+	wrote, err := installSkill(dest)
+	if err != nil {
+		fail(exitError, "ERROR: %v", err)
 	}
 	info("READY: installed robld skill into this folder")
 	for _, rel := range wrote {

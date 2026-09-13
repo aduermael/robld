@@ -17,18 +17,19 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache-dependency-path: cli/go.sum
+          cache-dependency-path: go.mod
 
       - name: Build binaries
         working-directory: cli
         run: |
           set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
           mkdir -p dist
           build() {
             local goos="$1" goarch="$2" out="$3"
-            echo "building $out"
+            echo "building $out ($VERSION)"
             CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
-              go build -trimpath -ldflags='-s -w' -o "dist/$out" .
+              go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o "dist/$out" .
           }
           build darwin arm64 robld-darwin-arm64
           build darwin amd64 robld-darwin-amd64

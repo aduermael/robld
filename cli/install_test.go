@@ -7,39 +7,68 @@ import (
 	"testing"
 )
 
-func TestRunInstallWritesSkills(t *testing.T) {
+func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
+	body := skillBody()
+	if strings.TrimSpace(body) == "" {
+		t.Fatal("embedded skill is empty")
+	}
+	for _, need := range []string{
+		"robld",
+		"Script Sync",
+		"git init",
+		"--install",
+		"--version",
+		"--update",
+		"READY:",
+		"NEED_PLACE:",
+		"NOT_READY:",
+	} {
+		if !strings.Contains(body, need) {
+			t.Errorf("embedded skill missing %q", need)
+		}
+	}
+
 	dir := t.TempDir()
-	wd, err := os.Getwd()
+	wrote, err := installSkill(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(wd) })
-
-	// runInstall calls fail/os.Exit on error; exercise the write path via helper pieces.
-	body := strings.TrimSpace(embeddedSkill) + "\n"
-	if !strings.Contains(body, "robld") {
-		t.Fatalf("embedded skill missing robld: %q", body[:80])
+	if len(wrote) == 0 {
+		t.Fatal("installSkill wrote nothing")
 	}
 	for _, rel := range skillInstallPaths {
 		path := filepath.Join(dir, rel)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
-			t.Fatal(err)
-		}
 		raw, err := os.ReadFile(path)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("read %s: %v", rel, err)
 		}
-		if !strings.Contains(string(raw), "Script Sync") {
-			t.Fatalf("%s missing Script Sync", rel)
+		if string(raw) != body {
+			t.Fatalf("%s does not match embedded skill (%d bytes vs %d)", rel, len(raw), len(body))
 		}
-		if !strings.Contains(string(raw), "git init") {
-			t.Fatalf("%s missing git init guidance", rel)
-		}
+	}
+	agents, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(agents), "robld --install") {
+		t.Fatalf("AGENTS.md missing install hint: %s", agents)
+	}
+}
+
+func TestInstallSkillLeavesExistingAgents(t *testing.T) {
+	dir := t.TempDir()
+	want := "keep me\n"
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte(want), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := installSkill(dir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != want {
+		t.Fatalf("AGENTS.md overwritten: %q", got)
 	}
 }

@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'INSTALL-PROMPT.md'
       - '.github/workflows/pages.yml'
+      - '.github/scripts/inject-install-prompt.py'
   workflow_dispatch:
 
 permissions:
@@ -25,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Inject INSTALL-PROMPT.md into landing page
+        run: python3 .github/scripts/inject-install-prompt.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

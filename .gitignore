@@ -15,6 +15,13 @@
 .grok/config.toml
 .codex/config.toml
 
+# installed by `robld --install` (source of truth is skill/)
+.claude/skills/
+.grok/skills/
+.agents/skills/
+.cursor/skills/
+.codex/skills/
+
 # Roblox project (place, Luau, per-game sync map)
 place.json
 place.rbxlx

@@ -2,7 +2,7 @@
 //
 // One mode: non-interactive and stateful. Pass a place id / game URL once;
 // it is saved to place.json. Exit 2 means do the Studio Sync to… step, then
-// run again. See START.md.
+// run again. How-to lives in the embedded skill (robld --install).
 package main
 
 import (
@@ -65,7 +65,7 @@ type options struct {
 	localFile   string
 	newPlace    bool
 	newName     string
-	cmd         string // "", "save", "prefs", "scan", "dump", "install"
+	cmd         string // "", "save", "prefs", "scan", "dump", "install", "version", "update", "help"
 	prefsAction string // "" or "apply"
 }
 
@@ -83,12 +83,20 @@ func main() {
 		}
 	}
 
+	maybePrintUpdateNotice(os.Args[1:], defaultUpdater(), os.Stderr)
+
 	opts := parseArgs(os.Args[1:])
 	if err := os.Chdir(root); err != nil {
 		fail(exitError, "ERROR: %v", err)
 	}
 
 	switch opts.cmd {
+	case "help":
+		fmt.Print(usage())
+		return
+	case "version":
+		writeVersion(os.Stdout)
+		return
 	case "save":
 		runSave()
 		return
@@ -103,6 +111,9 @@ func main() {
 		return
 	case "install":
 		runInstall()
+		return
+	case "update":
+		runUpdate()
 		return
 	}
 
@@ -207,7 +218,7 @@ func findRoot() string {
 }
 
 func hasProjectMarker(dir string) bool {
-	for _, name := range []string{"place.json", "AGENTS.md", "robuild-sync.json", "cli/go.mod"} {
+	for _, name := range []string{"place.json", "AGENTS.md", "robuild-sync.json", "cli/go.mod", "skill/SKILL.md"} {
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return true
 		}
@@ -220,6 +231,8 @@ func usage() string {
 		"       robld --new [\"Game Name\"]\n" +
 		"       robld --file place.rbxlx\n" +
 		"       robld --install\n" +
+		"       robld --version\n" +
+		"       robld --update\n" +
 		"       robld save\n" +
 		"       robld prefs\n" +
 		"       robld prefs apply\n" +
@@ -227,6 +240,8 @@ func usage() string {
 		"       robld dump\n\n" +
 		"Re-run until READY. Stateful: ids are stored in place.json.\n" +
 		"--install: write the robld skill into this folder for Claude, Grok, Codex, Cursor.\n" +
+		"--version: print the version stamped into this binary.\n" +
+		"--update: download the latest GitHub release for this OS/arch, replace this binary, and --install the skill.\n" +
 		"save (macOS): focus Studio and Cmd+S so place.rbxlx updates. No restart.\n" +
 		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +
@@ -240,12 +255,15 @@ func parseArgs(args []string) options {
 		arg := args[i]
 		switch {
 		case arg == "-h" || arg == "--help":
-			fmt.Print(usage())
-			os.Exit(0)
+			opts.cmd = "help"
 		case arg == "--":
 			continue
 		case arg == "--install":
 			opts.cmd = "install"
+		case arg == "--version":
+			opts.cmd = "version"
+		case arg == "--update":
+			opts.cmd = "update"
 		case arg == "--new":
 			opts.newPlace = true
 		case strings.HasPrefix(arg, "--new="):
@@ -272,6 +290,20 @@ func parseArgs(args []string) options {
 			rest = rest[1:]
 			if len(rest) > 0 {
 				fail(exitError, "ERROR: robld --install takes no extra arguments")
+			}
+			return opts
+		case "version":
+			opts.cmd = "version"
+			rest = rest[1:]
+			if len(rest) > 0 {
+				fail(exitError, "ERROR: robld --version takes no extra arguments")
+			}
+			return opts
+		case "update":
+			opts.cmd = "update"
+			rest = rest[1:]
+			if len(rest) > 0 {
+				fail(exitError, "ERROR: robld --update takes no extra arguments")
 			}
 			return opts
 		case "save":
@@ -308,9 +340,9 @@ func parseArgs(args []string) options {
 			return opts
 		}
 	}
-	if opts.cmd == "install" {
-		if len(rest) > 0 {
-			fail(exitError, "ERROR: robld --install takes no extra arguments")
+	if opts.cmd == "install" || opts.cmd == "version" || opts.cmd == "update" || opts.cmd == "help" {
+		if opts.cmd != "help" && len(rest) > 0 {
+			fail(exitError, "ERROR: robld --%s takes no extra arguments", opts.cmd)
 		}
 		return opts
 	}

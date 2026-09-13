@@ -16,6 +16,29 @@ func TestParseArgsSave(t *testing.T) {
 	}
 }
 
+func TestParseArgsVersionUpdateHelp(t *testing.T) {
+	v := parseArgs([]string{"--version"})
+	if v.cmd != "version" {
+		t.Fatalf("version flag: %+v", v)
+	}
+	v2 := parseArgs([]string{"version"})
+	if v2.cmd != "version" {
+		t.Fatalf("version cmd: %+v", v2)
+	}
+	u := parseArgs([]string{"--update"})
+	if u.cmd != "update" {
+		t.Fatalf("update flag: %+v", u)
+	}
+	u2 := parseArgs([]string{"update"})
+	if u2.cmd != "update" {
+		t.Fatalf("update cmd: %+v", u2)
+	}
+	h := parseArgs([]string{"--help"})
+	if h.cmd != "help" {
+		t.Fatalf("help: %+v", h)
+	}
+}
+
 func TestParseArgsPrefsAndScan(t *testing.T) {
 	prefs := parseArgs([]string{"prefs"})
 	if prefs.cmd != "prefs" || prefs.prefsAction != "" {

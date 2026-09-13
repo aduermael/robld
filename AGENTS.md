@@ -1,6 +1,6 @@
 # Roblox agent workspace (robld)
 
-If the skill is missing, run `robld --install`. Run `robld` from the game folder until stdout contains `READY:`. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Non-interactive, re-runnable, state in `place.json`.
+If the skill is missing, run `robld --install`. Run `robld` from the game folder until stdout contains `READY:`. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Non-interactive, re-runnable, state in `place.json`. `robld --version` prints the stamped build; if output says a new version is available, run `robld --update`.
 
 - Exit **0** `READY:` — Script Sync + MCP are up. Proceed.
 - Exit **1** `NEED_PLACE:` — `robld --new` / `robld --new "Name"`, or a place id / game URL. Re-run.
@@ -15,4 +15,4 @@ Once READY:
 
 - **Luau:** create/edit/delete files in this tree only. Do not MCP-write scripts that live on disk.
 - **World:** `place.rbxlx` (and Studio Save). MCP for playtest, inspect, instances, assets, meshes.
-- Full split and file naming: `.grok/skills/roblox-script-sync-mcp/SKILL.md`
+- Full split and file naming: `.grok/skills/robld/SKILL.md` (source of truth in this repo: `skill/SKILL.md`)

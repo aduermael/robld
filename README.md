@@ -16,13 +16,14 @@ Your agent does not fight the Studio UI to start sync. `robld` bootstraps prefs,
 
 ## Install with an agent
 
-Open [aduermael.github.io/robld](https://aduermael.github.io/robld/), copy the install prompt, and paste it into Claude Code, Codex, Grok Build, or Cursor. That downloads the latest release onto PATH and runs `robld --install` in your project.
+Open [aduermael.github.io/robld](https://aduermael.github.io/robld/), copy the install prompt (source: [INSTALL-PROMPT.md](INSTALL-PROMPT.md)), and paste it into Claude Code, Codex, Grok Build, or Cursor. That downloads the latest release onto PATH and runs `robld --install` in your project. `robld --version` prints the stamped build; `robld --update` replaces the binary from GitHub and reinstalls the skill.
 
 ## Quick start
 
 ```bash
-cd cli && go build -o robld .
+cd cli && go build -ldflags="-X main.version=dev" -o robld .
 cd ..
+./cli/robld --install
 ./cli/robld --new "My Game"
 # re-run until READY
 ./cli/robld
@@ -44,7 +45,7 @@ cd ..
 | **1** `NEED_PLACE:` / `ERROR:` | Pass `--new`, a game URL, or fix Studio. |
 | **2** `NOT_READY:` | Do **Sync to…** once in Explorer, then re-run `robld`. |
 
-How-to detail: **[START.md](START.md)**. Agent rules: **[AGENTS.md](AGENTS.md)**. Studio internals we reverse-engineered: **[NOTES.md](NOTES.md)**.
+How-to is the skill (`skill/SKILL.md`, installed into a project with `robld --install`). Install prompt: **[INSTALL-PROMPT.md](INSTALL-PROMPT.md)**. Agent rules: **[AGENTS.md](AGENTS.md)**. Studio internals we reverse-engineered: **[NOTES.md](NOTES.md)**.
 
 ## What you version
 

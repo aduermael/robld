@@ -1,6 +1,6 @@
 # Studio Script Sync — what we actually learned
 
-User-facing how-to is `START.md`. This file is the reverse-engineering log so we do not re-learn it. Observations are from **Roblox Studio 0.738** on **macOS arm64** (2026-09-12), place `place.rbxlx`, repo path often a symlink (`/Users/…/repos/misc` → `…/Documents/repos/misc`).
+User-facing how-to is `skill/SKILL.md` (installed with `robld --install`). This file is the reverse-engineering log so we do not re-learn it. Observations are from **Roblox Studio 0.738** on **macOS arm64** (2026-09-12), place `place.rbxlx`, repo path often a symlink (`/Users/…/repos/misc` → `…/Documents/repos/misc`).
 
 Official docs: [Script Sync](https://create.roblox.com/docs/scripting/sync) · [Studio MCP](https://create.roblox.com/docs/studio/mcp) · [Studio CLI](https://create.roblox.com/docs/studio/command-line-interface).
 

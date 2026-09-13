@@ -22,14 +22,16 @@ Have the user (or you) copy the install prompt from https://aduermael.github.io/
 4. From the project folder, run `robld --install` once. That writes the Roblox skill for Claude, Grok, Codex, Cursor, and `.agents`.
 5. Then the human can prompt you to create or work on a game in the current folder.
 
-Prefer the release binary over building from source. Do not ask the user to run these steps by hand unless a permission dialog needs a human.
+Prefer the release binary over building from source. Do not ask the user to run these steps by hand unless a permission dialog needs a human. The install prompt source of truth is INSTALL-PROMPT.md at the repo root (injected into the landing page by the Pages workflow).
 
 ## After install
 
 - Run `robld` from the game folder until stdout contains `READY:`.
 - `robld --new "Name"` creates a new place. A Roblox game URL or place id also works.
+- `robld --version` prints the stamped build. `robld --update` downloads the latest GitHub release for this OS/arch and reinstalls the skill.
 - Luau lives on disk (Studio Script Sync). World state is `place.rbxlx`. Playtest, inspect, parts, and assets go through Studio MCP.
 - If `git` is installed and the folder is not a repository, `git init` and commit often.
+- Full CLI how-to is the skill (`skill/SKILL.md`; also written by `--install`).
 
 ## Links
 
@@ -37,6 +39,7 @@ Prefer the release binary over building from source. Do not ask the user to run 
 - [GitHub](https://github.com/aduermael/robld): source, issues, releases
 - [Latest release](https://github.com/aduermael/robld/releases/latest): CLI binaries
 - [README](https://github.com/aduermael/robld/blob/main/README.md): project overview
-- [START.md](https://github.com/aduermael/robld/blob/main/START.md): how-to
+- [INSTALL-PROMPT.md](https://github.com/aduermael/robld/blob/main/INSTALL-PROMPT.md): install prompt source
+- [Skill](https://github.com/aduermael/robld/blob/main/skill/SKILL.md): CLI how-to
 - [Roblox Studio](https://create.roblox.com/download): required
 - [Author on X](https://x.com/aduermael): @aduermael
