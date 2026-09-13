@@ -7,7 +7,9 @@ on:
       - 'docs/**'
       - 'INSTALL-PROMPT.md'
       - '.github/workflows/pages.yml'
-      - '.github/scripts/inject-install-prompt.py'
+      - '.github/scripts/**'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test release catalog script
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Publish latest binaries and release JSON
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/publish_releases.py
       - name: Inject INSTALL-PROMPT.md into landing page
         run: python3 .github/scripts/inject-install-prompt.py
       - uses: actions/configure-pages@v5

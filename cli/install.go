@@ -44,7 +44,7 @@ func installSkill(dest string) ([]string, error) {
 			"Run `robld` from this folder until stdout contains `READY:`.\n" +
 			"If the skill is missing, run `robld --install`. If a new version is available, run `robld --update`.\n" +
 			"Skill: `.claude/skills/robld/SKILL.md` (also installed for Grok, Codex, Cursor, and `.agents`).\n" +
-			"Full how-to: https://aduermael.github.io/robld/\n"
+			"Full how-to: https://robld.com/\n"
 		if err := os.WriteFile(agents, []byte(note), 0o644); err != nil {
 			return wrote, fmt.Errorf("could not write AGENTS.md: %w", err)
 		}

@@ -38,6 +38,10 @@ robuild-sync.json
 /StarterPlayerScripts/
 /robuild-dump/
 
+# generated at GitHub Pages deploy
+/docs/releases.json
+/docs/releases/
+
 # junk
 .DS_Store
 Thumbs.db

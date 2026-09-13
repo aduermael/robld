@@ -16,7 +16,7 @@ The skill in this folder is the how-to. If it is missing in a project, run `robl
 
 ## CLI
 
-`robld` should already be on PATH (agent install from https://aduermael.github.io/robld/). Run it from the game folder. Same command every time. Prefer a release binary over building from source.
+`robld` should already be on PATH (install from https://robld.com/). Run it from the game folder. Same command every time.
 
 | Command | What it does |
 |---|---|
@@ -24,23 +24,15 @@ The skill in this folder is the how-to. If it is missing in a project, run `robl
 | `robld --new` / `robld --new "Name"` | Create a local `place.rbxlx` and `place.json`, then launch Studio. |
 | `robld <place-id-or-url>` | Bind an existing cloud place (or `robld --file place.rbxlx`). |
 | `robld --install` | Write this skill into the current project (Claude, Grok, Codex, Cursor, `.agents`). |
-| `robld --version` | Print the build version embedded in this binary. |
-| `robld --update` | Replace this binary with the latest GitHub release for this OS/arch **and** run `--install` so the skill matches that binary. |
+| `robld --version` | Print the version. |
+| `robld --update` | Update robld and reinstall the skill. |
 | `robld save` | macOS: focus Studio and File→Save / Cmd+S so `place.rbxlx` updates. No restart. |
 | `robld prefs` / `robld prefs apply` | Show or write this machine's Script Sync Studio Settings. |
 | `robld dump` | Copy Studio settings/logs/sync clues into `robuild-dump/` for the agent to read. |
 | `robld scan` | Stdout-only version of the dump clues. |
 | `robld --help` | Usage text. |
 
-If a command prints that a new version is available, run `robld --update`. Do not invent an install path; `--update` downloads the matching release asset and refreshes the skill.
-
-Build from this repo (untagged builds report version `dev`):
-
-```bash
-cd cli && go build -o robld .
-```
-
-Windows: `cd cli` then `go build -o robld.exe .`.
+If a command prints that a new version is available, run `robld --update`.
 
 ## Bootstrap
 

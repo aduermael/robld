@@ -240,8 +240,8 @@ func usage() string {
 		"       robld dump\n\n" +
 		"Re-run until READY. Stateful: ids are stored in place.json.\n" +
 		"--install: write the robld skill into this folder for Claude, Grok, Codex, Cursor.\n" +
-		"--version: print the version stamped into this binary.\n" +
-		"--update: download the latest GitHub release for this OS/arch, replace this binary, and --install the skill.\n" +
+		"--version: print the version.\n" +
+		"--update: update robld and --install the skill.\n" +
 		"save (macOS): focus Studio and Cmd+S so place.rbxlx updates. No restart.\n" +
 		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +

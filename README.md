@@ -16,28 +16,19 @@ Your agent does not fight the Studio UI to start sync. `robld` bootstraps prefs,
 
 ## Install with an agent
 
-Open [aduermael.github.io/robld](https://aduermael.github.io/robld/), copy the install prompt (source: [INSTALL-PROMPT.md](INSTALL-PROMPT.md)), and paste it into Claude Code, Codex, Grok Build, or Cursor. That downloads the latest release onto PATH and runs `robld --install` in your project. `robld --version` prints the stamped build; `robld --update` replaces the binary from GitHub and reinstalls the skill.
+Open [robld.com](https://robld.com/), copy the install prompt (source: [INSTALL-PROMPT.md](INSTALL-PROMPT.md)), and paste it into Claude Code, Codex, Grok Build, or Cursor. That puts `robld` on PATH and runs `robld --install` in your project. `robld --version` prints the version; `robld --update` updates it and reinstalls the skill.
 
 ## Quick start
 
+After install, from the game folder:
+
 ```bash
-cd cli && go build -ldflags="-X main.version=dev" -o robld .
-cd ..
-./cli/robld --install
-./cli/robld --new "My Game"
+robld --new "My Game"
 # re-run until READY
-./cli/robld
+robld
 ```
 
-Windows:
-
-```powershell
-cd cli
-go build -o robld.exe .
-cd ..
-.\cli\robld.exe --new "My Game"
-.\cli\robld.exe
-```
+Windows is the same command (`robld`).
 
 | Exit | Meaning |
 |---|---|
@@ -67,3 +58,13 @@ On-disk artifact names still use the `robuild-*` prefix so existing projects kee
 5. Commit scripts + `place.rbxlx`.
 
 Built for agents that already live in your editor — Grok, Claude, Codex, Cursor, and friends. Roblox stays Roblox. The repo becomes the product.
+
+## Developing this repo
+
+This GitHub repository is the CLI. From a checkout:
+
+```bash
+cd cli && go build -ldflags="-X main.version=dev" -o robld .
+```
+
+Windows: `cd cli` then `go build -o robld.exe .`.
