@@ -21,7 +21,7 @@ Have the user (or you) copy the install prompt from https://robld.com/ into the 
 3. Verify the file's sha256 against https://robld.com/releases/latest.json (the `sha256` field for that asset). Do not install if it does not match.
 4. Put it on PATH (`~/.local/bin/robld` on macOS, `%LOCALAPPDATA%\Programs\robld\robld.exe` on Windows).
 5. From the project folder, run `robld --install` once. That writes the Roblox skill for Claude, Grok, Codex, Cursor, and `.agents`.
-6. Then the human can prompt you to create or work on a game in the current folder.
+6. Immediately read the skill you just wrote into this session (do not wait for an agent restart). Tell the user robld is installed, then ask: "What game would you like to work on now?" Never ask the user to run robld commands or flags unless they asked; you run them.
 
 Machine-readable release metadata (version, date, sha256, download URLs):
 - Latest: https://robld.com/releases/latest.json
@@ -31,11 +31,12 @@ Do not ask the user to run these steps by hand unless a permission dialog needs 
 
 ## After install
 
+- Load the skill in this session, then ask what game they want. You run robld; do not ask the user to.
 - Run `robld` from the game folder until stdout contains `READY:`.
 - `robld --new "Name"` creates a new place. A Roblox game URL or place id also works.
 - `robld --version` prints the version. `robld --update` updates robld and reinstalls the skill.
-- Luau lives on disk (Studio Script Sync). World state is `place.rbxlx`. Playtest, inspect, parts, and assets go through Studio MCP.
-- If `git` is installed and the folder is not a repository, `git init` and commit often.
+- Luau lives on disk (Studio Script Sync). World state is `place.rbxlx` via File → Save to File. Playtest, inspect, parts, and assets go through Studio MCP when `list_roblox_studios` exists.
+- If `git` is installed and the folder is not a repository, `git init` and commit often. Gitignore `place.rbxlx.lock` and `robuild-dump/`.
 - Full CLI how-to is the skill written by `robld --install`.
 
 ## Links

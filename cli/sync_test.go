@@ -86,6 +86,19 @@ func TestMigrateLegacyGreenfieldMap(t *testing.T) {
 	}
 }
 
+func TestSeedGreenfieldUsesLocalScript(t *testing.T) {
+	root = t.TempDir()
+	seedGreenfield(greenfieldManifest())
+	local := filepath.Join(root, "src", "client", "main.local.luau")
+	if _, err := os.Stat(local); err != nil {
+		t.Fatalf("expected LocalScript seed: %v", err)
+	}
+	client := filepath.Join(root, "src", "client", "main.client.luau")
+	if _, err := os.Stat(client); err == nil {
+		t.Fatal("must not seed .client.luau under StarterPlayerScripts")
+	}
+}
+
 func TestScriptInstanceName(t *testing.T) {
 	n, c, r := scriptInstanceName("main.server.luau")
 	if n != "main" || c != "Script" || r != "Server" {
@@ -93,6 +106,10 @@ func TestScriptInstanceName(t *testing.T) {
 	}
 	n, c, r = scriptInstanceName("Hello.luau")
 	if n != "Hello" || c != "ModuleScript" || r != "" {
+		t.Fatalf("%s %s %s", n, c, r)
+	}
+	n, c, r = scriptInstanceName("main.local.luau")
+	if n != "main" || c != "LocalScript" || r != "" {
 		t.Fatalf("%s %s %s", n, c, r)
 	}
 }

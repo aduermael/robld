@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,10 +15,42 @@ import (
 func runSave() {
 	studio := findStudio()
 	if studio == "" || !studioRunning(studio) {
-		fail(exitError, "ERROR: Roblox Studio is not running.\nStart it with robld first, then robld save.")
+		fail(exitError, "ERROR: Roblox Studio is not running.\nStart it first, then save the place.")
 	}
 
 	p := loadPlace()
+	path := absFromRepo(p.LocalPlaceFile)
+	if path == "" {
+		warn("place.json has no localPlaceFile. Save to File may not write a git place file.")
+	}
+
+	if err := saveStudioPlace(p); err != nil {
+		msg := err.Error()
+		if isAccessibilityError(msg) {
+			fail(exitError, "ERROR: macOS blocked keystrokes to Studio (Accessibility).\n"+
+				"  System Settings → Privacy & Security → Accessibility\n"+
+				"  Enable the app that launched this tool (Terminal, iTerm, Grok, …).\n"+
+				"  %s", strings.TrimSpace(msg))
+		}
+		warn("Studio did not update %s.", repoRel(path))
+		warn("Nothing to save, Save went to cloud, or a dialog is in front. Click Studio once and retry.")
+		os.Exit(exitRetry)
+	}
+
+	if path == "" {
+		info("Sent Save to File to Roblox Studio.")
+		return
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		warn("Save sent, but %s is missing.", repoRel(path))
+		os.Exit(exitRetry)
+	}
+	info("Updated %s (%d bytes).", repoRel(path), st.Size())
+	fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": place file saved"))
+}
+
+func saveStudioPlace(p place) error {
 	path := absFromRepo(p.LocalPlaceFile)
 	var before time.Time
 	var beforeSize int64
@@ -25,80 +58,53 @@ func runSave() {
 		if st, err := os.Stat(path); err == nil {
 			before = st.ModTime()
 			beforeSize = st.Size()
-		} else {
-			warn("No local place file yet at %s — still sending Cmd+S.", path)
 		}
-	} else {
-		warn("place.json has no localPlaceFile. Cmd+S may save to Roblox cloud instead of disk.")
 	}
 
-	if err := sendStudioSave(); err != nil {
-		msg := err.Error()
-		if isAccessibilityError(msg) {
-			fail(exitError, "ERROR: macOS blocked keystrokes to Studio (Accessibility).\n"+
-				"  System Settings → Privacy & Security → Accessibility\n"+
-				"  Enable the app that launched robld (Terminal, iTerm, Grok, …).\n"+
-				"  %s", strings.TrimSpace(msg))
-		}
-		fail(exitError, "ERROR: could not send Save to Studio.\n  %s", strings.TrimSpace(msg))
+	if err := sendStudioScript(studioSaveToFileScript); err != nil {
+		return err
 	}
-	info("Sent Cmd+S to Roblox Studio.")
-
+	wait := saveWaitDuration()
 	if path == "" {
-		info("No place.rbxlx to watch. If this was a cloud place, Save went to Roblox.")
-		return
+		return nil
+	}
+	if waitPlaceChanged(path, before, beforeSize, wait) {
+		return nil
 	}
 
-	wait := 8 * time.Second
-	if v := os.Getenv("SAVE_WAIT_SECS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
-			wait = time.Duration(n) * time.Second
-		}
+	if err := sendStudioScript(studioSaveCmdSScript); err != nil {
+		return err
 	}
-	deadline := time.Now().Add(wait)
-	for time.Now().Before(deadline) {
-		time.Sleep(200 * time.Millisecond)
-		st, err := os.Stat(path)
-		if err != nil {
-			continue
-		}
-		if st.ModTime().After(before) || st.Size() != beforeSize {
-			info("Updated %s (%d bytes).", repoRel(path), st.Size())
-			fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": place file saved"))
-			return
-		}
+	if waitPlaceChanged(path, before, beforeSize, wait) {
+		return nil
 	}
-	warn("Studio did not update %s within %s.", repoRel(path), wait)
-	warn("Nothing to save, Save went to cloud, or a dialog is in front. Click Studio once and retry.")
-	os.Exit(exitRetry)
+	return fmt.Errorf("Studio did not update %s within %s", repoRel(path), wait)
 }
 
-func sendStudioSave() error {
+func sendStudioScript(build func(int) string) error {
 	pid, err := studioPID()
 	if err != nil {
 		return err
 	}
-	script := fmt.Sprintf(`
-tell application "System Events"
-  set frontmost of (first process whose unix id is %d) to true
-end tell
-delay 0.2
-tell application "System Events"
-  tell (first process whose unix id is %d)
-    try
-      click menu item "Save" of menu "File" of menu bar 1
-    on error
-      keystroke "s" using command down
-    end try
-  end tell
-end tell
-`, pid, pid)
-	cmd := exec.Command("osascript", "-e", script)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
+	_, err = runOSAScript(build(pid), studioAppleEventTimeout)
+	return err
+}
+
+func runOSAScript(script string, timeout time.Duration) ([]byte, error) {
+	if timeout <= 0 {
+		timeout = studioAppleEventTimeout
 	}
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "osascript", "-e", script)
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return out, fmt.Errorf("osascript timed out after %s: %s", timeout, strings.TrimSpace(string(out)))
+	}
+	if err != nil {
+		return out, fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return out, nil
 }
 
 func studioPID() (int, error) {

@@ -23,6 +23,30 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 		"NEED_PLACE:",
 		"NOT_READY:",
 		"UniqueId",
+		"When the user must click",
+		"StarterPlayerScripts",
+		".local.luau",
+		"Save to File",
+		"Start Test Session",
+		"F5",
+		"FLog::CreatorOutput",
+		"*_last.log",
+		"list_roblox_studios",
+		"start_stop_play",
+		"Unable to reach Roblox Studio",
+		"What game would you like to work on now?",
+		"Never ask the user to run",
+		"wait for an agent restart",
+		"place.rbxlx.lock",
+		"robuild-dump/",
+		"Homebrew `luau`",
+		"newline-delimited JSON-RPC",
+		"Content-Length",
+		"Screen Recording",
+		"open -a RobloxStudio",
+		"Manage MCP Servers",
+		"Save / Don't Save / Cancel",
+		"key code 96",
 	} {
 		if !strings.Contains(body, need) {
 			t.Errorf("embedded skill missing %q", need)
@@ -53,6 +77,55 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 	}
 	if !strings.Contains(string(agents), "robld --install") {
 		t.Fatalf("AGENTS.md missing install hint: %s", agents)
+	}
+	if !strings.Contains(string(agents), "Never ask the user to run robld") {
+		t.Fatalf("AGENTS.md missing never-ask-user rule: %s", agents)
+	}
+}
+
+func TestInstallCompleteText(t *testing.T) {
+	got := installCompleteText([]string{".grok/skills/robld/SKILL.md"})
+	for _, need := range []string{
+		"READY: robld is installed",
+		".grok/skills/robld/SKILL.md",
+		"this session",
+		"What game would you like to work on now?",
+		"Never ask the user to run robld commands or flags",
+		"When the user must click",
+		"Save to File",
+	} {
+		if !strings.Contains(got, need) {
+			t.Errorf("install complete missing %q\n%s", need, got)
+		}
+	}
+}
+
+func readRepoFile(t *testing.T, name string) string {
+	t.Helper()
+	for _, p := range []string{name, filepath.Join("..", name)} {
+		b, err := os.ReadFile(p)
+		if err == nil {
+			return string(b)
+		}
+	}
+	t.Fatalf("could not read %s", name)
+	return ""
+}
+
+func TestInstallPromptLoadsSkillInSession(t *testing.T) {
+	s := readRepoFile(t, "INSTALL-PROMPT.md")
+	for _, need := range []string{
+		"What game would you like to work on now?",
+		"Do not wait for an agent restart",
+		"Never ask the user to run robld commands or flags",
+	} {
+		if !strings.Contains(s, need) {
+			t.Errorf("INSTALL-PROMPT.md missing %q", need)
+		}
+	}
+	llms := readRepoFile(t, "docs/llms.txt")
+	if !strings.Contains(llms, "What game would you like to work on now?") {
+		t.Error("docs/llms.txt missing post-install game prompt")
 	}
 }
 

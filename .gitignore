@@ -42,6 +42,9 @@ robuild-sync.json
 /docs/releases.json
 /docs/releases/
 
+# session feedback (never commit)
+robld-feedback.md
+
 # junk
 .DS_Store
 Thumbs.db

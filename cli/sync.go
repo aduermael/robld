@@ -105,23 +105,31 @@ func migrateLegacyGreenfieldMap(m syncManifest) syncManifest {
 	return next
 }
 
-func seedGreenfield(m syncManifest) {
-	files := map[string]string{
-		"src/server/main.server.luau": "print(\"robld server\")\n",
-		"src/shared/Hello.luau":       "return {}\n",
-		"src/client/main.client.luau": "print(\"robld client\")\n",
+type seedFile struct {
+	Rel  string
+	Body string
+}
+
+func greenfieldSeedFiles() []seedFile {
+	return []seedFile{
+		{Rel: "src/server/main.server.luau", Body: "print(\"robld server\")\n"},
+		{Rel: "src/shared/Hello.luau", Body: "return {}\n"},
+		{Rel: "src/client/main.local.luau", Body: "print(\"robld client\")\n"},
 	}
-	for rel, body := range files {
-		path := filepath.Join(root, filepath.FromSlash(rel))
+}
+
+func seedGreenfield(m syncManifest) {
+	for _, f := range greenfieldSeedFiles() {
+		path := filepath.Join(root, filepath.FromSlash(f.Rel))
 		if _, err := os.Stat(path); err == nil {
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			warn("Could not create %s: %v", rel, err)
+			warn("Could not create %s: %v", f.Rel, err)
 			continue
 		}
-		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
-			warn("Could not seed %s: %v", rel, err)
+		if err := os.WriteFile(path, []byte(f.Body), 0o644); err != nil {
+			warn("Could not seed %s: %v", f.Rel, err)
 		}
 	}
 	for _, r := range m.Roots {

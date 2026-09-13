@@ -14,5 +14,8 @@ Roblox Studio must already be installed. Studio is not available on Linux, so ro
    - Windows: %LOCALAPPDATA%\Programs\robld\robld.exe and ensure that folder is on PATH
 6. From this project folder, run: robld --install
 7. Confirm `robld` works (`robld --help` and `robld --version`) and that skill files exist under .claude/skills/robld, .grok/skills/robld, .agents/skills/robld, .cursor/skills/robld, and .codex/skills/robld.
+8. Immediately read the skill you just wrote into this session (`.grok/skills/robld/SKILL.md` or `.claude/skills/robld/SKILL.md`). Do not wait for an agent restart.
+9. Tell the user that robld is installed, then ask: "What game would you like to work on now?"
+10. Never ask the user to run robld commands or flags unless they asked you to; you run them. User-facing talk is not a CLI cheat-sheet.
 
-Do not ask me to run these steps by hand unless a permission dialog needs a human. Later, if robld prints that a new version is available, run `robld --update`.
+Do not ask me to run these steps by hand unless a permission dialog needs a human. Later, if robld prints that a new version is available, you run the update — do not ask the user to. You can start creating or opening a game in this same session.

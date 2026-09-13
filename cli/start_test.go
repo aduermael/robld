@@ -1,6 +1,54 @@
 package main
 
-import "testing"
+import (
+	"io"
+	"os"
+	"strings"
+	"testing"
+)
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stdout
+	os.Stdout = w
+	t.Setenv("FORCE_COLOR", "0")
+	done := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(r)
+		done <- string(b)
+	}()
+	fn()
+	_ = w.Close()
+	os.Stdout = old
+	return <-done
+}
+
+func TestPrintReadySplitsMCP(t *testing.T) {
+	root = t.TempDir()
+	out := captureStdout(t, func() {
+		printReady(place{Name: "Slash Waves", LocalPlaceFile: "place.rbxlx"}, nil, false)
+	})
+	if !strings.Contains(out, "READY: Script Sync") {
+		t.Fatalf("expected Script Sync ready:\n%s", out)
+	}
+	if strings.Contains(out, "READY: Script Sync + MCP") {
+		t.Fatalf("empty MCP must not claim MCP:\n%s", out)
+	}
+	if !strings.Contains(out, "NEED_USER:") || !strings.Contains(out, "Manage MCP Servers") {
+		t.Fatalf("expected Assistant MCP toggle NEED_USER:\n%s", out)
+	}
+
+	ok := captureStdout(t, func() {
+		printReady(place{Name: "Slash Waves"}, nil, true)
+	})
+	if !strings.Contains(ok, "READY: Script Sync + MCP") {
+		t.Fatalf("non-empty tools may claim MCP:\n%s", ok)
+	}
+}
 
 func TestParseArgsNew(t *testing.T) {
 	opts := parseArgs([]string{"--new", "My Game"})

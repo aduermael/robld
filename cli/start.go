@@ -132,12 +132,12 @@ func main() {
 			"Run this on the machine that has Studio installed (or from WSL on that PC).")
 	}
 
-	bootStudio(studio, p)
+	bootStudio(studio, p, opts.newPlace)
 	scripts := waitUntilSyncReady()
-	printReady(p, scripts)
+	printReady(p, scripts, studioMCPConnected(studio))
 }
 
-func bootStudio(studio string, p place) {
+func bootStudio(studio string, p place, newPlace bool) {
 	m := ensureProjectSyncLayout()
 	info("Sync map (%s) — edit this file for a different folder layout:", syncManifestName)
 	for _, r := range m.Roots {
@@ -149,21 +149,21 @@ func bootStudio(studio string, p place) {
 			info("Wrote rbx-storage.db inspect → %s", filepath.Join(dump, "rbx-storage.txt"))
 		}
 	}
-	_, pluginChanged := installRobuildPlugin()
+	_, pluginChanged := installRobuildPlugin(newPlace)
 	running := studioRunning(studio)
-	needPrefs := studioPrefsNeedApply()
-	needPersist := persistNeedsWrite(p)
-	needUniqueIds := placeNeedsUniqueIds(p)
-	if running && (needPrefs || pluginChanged || needPersist || needUniqueIds) {
+	needs := restartNeeds{
+		Prefs:  studioPrefsNeedApply(),
+		Plugin: pluginChanged,
+		Resume: persistNeedsWrite(p) || placeNeedsUniqueIds(p),
+	}
+	if studioNeedsRestart(running, needs) {
 		info("Restarting Roblox Studio so Script Sync prefs, plugin, and resume records apply.")
-		bestEffortStudioSave()
-		if err := quitStudio(); err != nil {
-			warn("%v", err)
-			warn("Quit Studio, then re-run robld.")
-		} else {
-			running = false
-			time.Sleep(time.Second)
+		if err := saveAndQuitStudio(p); err != nil {
+			fmt.Println(saveDialogNeedUserMessage())
+			os.Exit(exitRetry)
 		}
+		running = false
+		time.Sleep(time.Second)
 	}
 	if running {
 		info("Studio is already running — leaving that window. Confirm the right place is open.")
@@ -246,7 +246,7 @@ func usage() string {
 		"--install: write the robld skill into this folder for Claude, Grok, Codex, Cursor.\n" +
 		"--version: print the version.\n" +
 		"--update: update robld and --install the skill.\n" +
-		"save (macOS): focus Studio and Cmd+S so place.rbxlx updates. No restart.\n" +
+		"save (macOS): File → Save to File so place.rbxlx updates. Cmd+S is the fallback. No restart.\n" +
 		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +
 		"Exit 0 = ready, 1 = error, 2 = waiting on Script Sync in Studio.\n"
@@ -789,7 +789,7 @@ func launchStudio(studio string, p place) {
 		fileArg := studioPathArg(local)
 		args = []string{"--task", "EditFile", "--localPlaceFile", fileArg}
 		info("Opening local place: %s", local)
-		info("Save in Studio (Cmd+S / Ctrl+S) so world changes write back into git.")
+		info("Save to File in Studio so world changes write back into git.")
 	} else {
 		args = []string{
 			"--task", "EditPlace",
@@ -812,26 +812,20 @@ func launchStudio(studio string, p place) {
 func writeMCP(studio string) {
 	_ = os.MkdirAll(filepath.Join(root, ".grok"), 0o755)
 	_ = os.MkdirAll(filepath.Join(root, ".codex"), 0o755)
-	var mcpJSON []byte
+	cmd, args := studioMCPCommand(studio)
+	server := map[string]any{"command": cmd}
+	if len(args) > 0 {
+		server["args"] = args
+	}
+	mcpJSON, _ := json.MarshalIndent(map[string]any{
+		"mcpServers": map[string]any{"Roblox_Studio": server},
+	}, "", "  ")
 	var toml string
-	if runtime.GOOS == "darwin" && (studio == "" || strings.Contains(studio, "RobloxStudio.app")) {
-		cmd := "/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP"
-		mcpJSON, _ = json.MarshalIndent(map[string]any{
-			"mcpServers": map[string]any{
-				"Roblox_Studio": map[string]any{"command": cmd},
-			},
-		}, "", "  ")
+	if len(args) == 0 {
 		toml = fmt.Sprintf("[mcp_servers.Roblox_Studio]\ncommand = %q\n", cmd)
 	} else {
-		mcpJSON, _ = json.MarshalIndent(map[string]any{
-			"mcpServers": map[string]any{
-				"Roblox_Studio": map[string]any{
-					"command": "cmd.exe",
-					"args":    []string{"/c", `%LOCALAPPDATA%\Roblox\mcp.bat`},
-				},
-			},
-		}, "", "  ")
-		toml = "[mcp_servers.Roblox_Studio]\ncommand = \"cmd.exe\"\nargs = [\"/c\", \"%LOCALAPPDATA%\\\\Roblox\\\\mcp.bat\"]\n"
+		b, _ := json.Marshal(args)
+		toml = fmt.Sprintf("[mcp_servers.Roblox_Studio]\ncommand = %q\nargs = %s\n", cmd, b)
 	}
 	_ = os.WriteFile(filepath.Join(root, ".mcp.json"), append(mcpJSON, '\n'), 0o644)
 	_ = os.WriteFile(filepath.Join(root, ".grok", "config.toml"), []byte(toml), 0o644)
@@ -839,9 +833,9 @@ func writeMCP(studio string) {
 	info("Wrote MCP config: .mcp.json, .grok/config.toml, .codex/config.toml")
 }
 
-func printReady(p place, scripts []string) {
+func printReady(p place, scripts []string, mcpOK bool) {
 	fmt.Println()
-	fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": Script Sync + MCP"))
+	fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": "+readySuffix(mcpOK)))
 	if p.Name != "" {
 		fmt.Printf("  name: %s\n", p.Name)
 	}
@@ -853,7 +847,12 @@ func printReady(p place, scripts []string) {
 	}
 	fmt.Printf("  %d Luau file(s) in %s\n", len(scripts), root)
 	fmt.Printf("  sync map: %s\n", syncManifestName)
-	fmt.Println("  MCP config written. Keep Studio open. Open this folder in the agent.")
+	if mcpOK {
+		fmt.Println("  MCP connected. Keep Studio open.")
+	} else {
+		fmt.Println("  MCP config written, but Studio MCP is not connected yet.")
+		fmt.Println(mcpNeedUserMessage())
+	}
 	if report := gitScriptReport(); report != "" {
 		fmt.Println(report)
 	}

@@ -41,6 +41,8 @@ func installSkill(dest string) ([]string, error) {
 	agents := filepath.Join(dest, "AGENTS.md")
 	if _, err := os.Stat(agents); os.IsNotExist(err) {
 		note := "# Roblox agent workspace (robld)\n\n" +
+			"After install, load `.grok/skills/robld/SKILL.md` (or `.claude/skills/robld/SKILL.md`) into this session now.\n" +
+			"Never ask the user to run robld commands or flags unless they asked; you run them.\n" +
 			"Run `robld` from this folder until stdout contains `READY:`.\n" +
 			"If the skill is missing, run `robld --install`. If a new version is available, run `robld --update`.\n" +
 			"Skill: `.claude/skills/robld/SKILL.md` (also installed for Grok, Codex, Cursor, and `.agents`).\n" +
@@ -53,6 +55,22 @@ func installSkill(dest string) ([]string, error) {
 	return wrote, nil
 }
 
+func installCompleteText(wrote []string) string {
+	var b strings.Builder
+	b.WriteString("READY: robld is installed\n")
+	for _, rel := range wrote {
+		b.WriteString("  " + rel + "\n")
+	}
+	b.WriteString("\n")
+	b.WriteString("AGENT: Read the skill you just wrote into this session now — do not wait for an agent restart:\n")
+	b.WriteString("  .grok/skills/robld/SKILL.md\n")
+	b.WriteString("AGENT: Tell the user robld is installed, then ask: \"What game would you like to work on now?\"\n")
+	b.WriteString("AGENT: Never ask the user to run robld commands or flags unless they asked; you run them.\n")
+	b.WriteString("\n----- skill/SKILL.md -----\n")
+	b.WriteString(skillBody())
+	return b.String()
+}
+
 func runInstall() {
 	dest, err := os.Getwd()
 	if err != nil {
@@ -62,9 +80,5 @@ func runInstall() {
 	if err != nil {
 		fail(exitError, "ERROR: %v", err)
 	}
-	info("READY: installed robld skill into this folder")
-	for _, rel := range wrote {
-		fmt.Printf("  %s\n", rel)
-	}
-	info("Next: run robld --new \"My Game\" (or robld with a place URL), then robld until READY.")
+	fmt.Print(installCompleteText(wrote))
 }

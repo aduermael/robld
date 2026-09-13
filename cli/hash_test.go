@@ -32,7 +32,7 @@ func TestParseArgsDump(t *testing.T) {
 
 func TestRenderPluginSource(t *testing.T) {
 	root = t.TempDir()
-	src, err := renderPluginSource()
+	src, err := renderPluginSource(false)
 	if err != nil {
 		t.Fatal(err)
 	}

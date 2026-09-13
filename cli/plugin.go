@@ -108,6 +108,11 @@ end
 
 local function applyFiles()
 	local created = {}
+	-- FILES is only the first --new seed. Later runs pass [] so deleting a
+	-- synced script on disk cannot resurrect it here.
+	if FILES == nil or #FILES == 0 then
+		return created
+	end
 	for _, f in ipairs(FILES) do
 		local parent, err = ensureFolder(f.parent)
 		if not parent then
@@ -293,7 +298,15 @@ type luaFile struct {
 	Source     string `json:"source"`
 }
 
-func installRobuildPlugin() (string, bool) {
+func shouldSeedPlugin(newPlace bool, pluginPath string) bool {
+	if !newPlace {
+		return false
+	}
+	_, err := os.Stat(pluginPath)
+	return err != nil
+}
+
+func installRobuildPlugin(newPlace bool) (string, bool) {
 	dir := studioPluginsDir()
 	if dir == "" {
 		warn("Could not find Studio Plugins folder — skip live Script Sync plugin.")
@@ -303,12 +316,12 @@ func installRobuildPlugin() (string, bool) {
 		warn("Could not create Plugins folder %s: %v", dir, err)
 		return "", false
 	}
-	src, err := renderPluginSource()
+	path := filepath.Join(dir, pluginFileName)
+	src, err := renderPluginSource(shouldSeedPlugin(newPlace, path))
 	if err != nil {
 		warn("Could not render robld plugin: %v", err)
 		return "", false
 	}
-	path := filepath.Join(dir, pluginFileName)
 	old, _ := os.ReadFile(path)
 	if bytes.Equal(old, []byte(src)) {
 		return path, false
@@ -321,7 +334,7 @@ func installRobuildPlugin() (string, bool) {
 	return path, true
 }
 
-func renderPluginSource() (string, error) {
+func renderPluginSource(seed bool) (string, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		abs = root
@@ -345,7 +358,11 @@ func renderPluginSource() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	filesJSON, err := json.Marshal(collectLuaFiles(m))
+	files := []luaFile{}
+	if seed {
+		files = collectSeedFiles(m)
+	}
+	filesJSON, err := json.Marshal(files)
 	if err != nil {
 		return "", err
 	}
@@ -356,49 +373,45 @@ func renderPluginSource() (string, error) {
 	return src, nil
 }
 
-func collectLuaFiles(m syncManifest) []luaFile {
+func collectSeedFiles(m syncManifest) []luaFile {
 	var out []luaFile
-	for _, r := range m.Roots {
-		base := absSyncPath(r.Disk)
-		_ = filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !isScript(info.Name()) {
-				return nil
-			}
-			if len(out) >= 80 {
-				return filepath.SkipAll
-			}
-			rel, err := filepath.Rel(base, path)
-			if err != nil {
-				return nil
-			}
-			rel = filepath.ToSlash(rel)
-			parent := r.Instance
-			dir := filepath.ToSlash(filepath.Dir(rel))
-			if dir != "." && dir != "" {
-				parent = parent + "." + strings.ReplaceAll(dir, "/", ".")
-			}
-			name, class, run := scriptInstanceName(info.Name())
-			if name == "" {
-				return nil
-			}
-			body, err := os.ReadFile(path)
-			if err != nil {
-				return nil
-			}
-			if len(body) > 100_000 {
-				body = body[:100_000]
-			}
-			out = append(out, luaFile{
-				Parent:     parent,
-				Name:       name,
-				Class:      class,
-				RunContext: run,
-				Source:     string(body),
-			})
-			return nil
+	for _, sf := range greenfieldSeedFiles() {
+		rel := filepath.ToSlash(sf.Rel)
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		body, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		name, class, run := scriptInstanceName(filepath.Base(rel))
+		if name == "" {
+			continue
+		}
+		out = append(out, luaFile{
+			Parent:     seedParent(m, rel),
+			Name:       name,
+			Class:      class,
+			RunContext: run,
+			Source:     string(body),
 		})
 	}
 	return out
+}
+
+func seedParent(m syncManifest, rel string) string {
+	disk := diskRootForScript(rel)
+	rest := strings.TrimPrefix(filepath.ToSlash(rel), disk+"/")
+	dir := filepath.ToSlash(filepath.Dir(rest))
+	parent := inferInstancePath(disk)
+	for _, r := range m.Roots {
+		if filepath.ToSlash(r.Disk) == disk {
+			parent = r.Instance
+			break
+		}
+	}
+	if dir != "." && dir != "" {
+		return parent + "." + strings.ReplaceAll(dir, "/", ".")
+	}
+	return parent
 }
 
 func scriptInstanceName(filename string) (name, class, runContext string) {

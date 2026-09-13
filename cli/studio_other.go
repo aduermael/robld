@@ -5,7 +5,13 @@ package main
 import "fmt"
 
 func quitStudio() error {
-	return fmt.Errorf("automatic Studio restart is macOS-only for now; quit Studio and re-run robld")
+	return fmt.Errorf("automatic Studio restart is macOS-only for now")
 }
 
-func bestEffortStudioSave() {}
+func saveAndQuitStudio(p place) error {
+	return quitStudio()
+}
+
+func saveStudioPlace(p place) error {
+	return fmt.Errorf("save is macOS-only for now")
+}

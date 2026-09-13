@@ -9,7 +9,7 @@ import (
 )
 
 func quitStudio() error {
-	_ = exec.Command("osascript", "-e", `tell application id "com.Roblox.RobloxStudio" to quit`).Run()
+	_, _ = runOSAScript(`tell application id "com.Roblox.RobloxStudio" to quit`, studioAppleEventTimeout)
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
 		if !studioRunning(findStudio()) {
@@ -28,9 +28,12 @@ func quitStudio() error {
 	return fmt.Errorf("Roblox Studio did not quit")
 }
 
-func bestEffortStudioSave() {
-	if !studioRunning(findStudio()) {
-		return
+func saveAndQuitStudio(p place) error {
+	_ = saveStudioPlace(p)
+	if err := quitStudio(); err == nil {
+		return nil
 	}
-	_ = sendStudioSave()
+	_ = sendStudioScript(studioReturnScript)
+	time.Sleep(time.Second)
+	return quitStudio()
 }
