@@ -81,19 +81,10 @@ func defaultUpdateCachePath() string {
 	return filepath.Join(dir, "robld", "update-check.json")
 }
 
-func skipUpdateNotice(args []string) bool {
-	for _, a := range args {
-		if a == "--update" || a == "update" {
-			return true
-		}
-	}
-	return false
-}
-
 // maybePrintUpdateNotice writes the nag to w when GitHub reports a newer tag.
 // A failed check never returns an error to the caller; it just skips the note.
-func maybePrintUpdateNotice(args []string, u *updater, w io.Writer) {
-	if u == nil || skipUpdateNotice(args) {
+func maybePrintUpdateNotice(u *updater, w io.Writer) {
+	if u == nil {
 		return
 	}
 	n := u.Notice()
@@ -234,7 +225,7 @@ func (u *updater) fetchRelease() (*githubRelease, error) {
 	if url == "" {
 		return nil, fmt.Errorf("no releases URL")
 	}
-	body, err := u.httpGet(url, 12*time.Second)
+	body, err := u.httpGet(url, 12*time.Second, true)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +239,7 @@ func (u *updater) fetchRelease() (*githubRelease, error) {
 	return &rel, nil
 }
 
-func (u *updater) httpGet(url string, timeout time.Duration) ([]byte, error) {
+func (u *updater) httpGet(url string, timeout time.Duration, githubJSON bool) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -256,7 +247,9 @@ func (u *updater) httpGet(url string, timeout time.Duration) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "robld/"+u.version())
-	req.Header.Set("Accept", "application/vnd.github+json")
+	if githubJSON {
+		req.Header.Set("Accept", "application/vnd.github+json")
+	}
 	resp, err := u.client().Do(req)
 	if err != nil {
 		return nil, err
@@ -353,7 +346,7 @@ func (u *updater) Update() error {
 	if assetURL == "" {
 		return fmt.Errorf("latest release %s has no asset %s", rel.TagName, want)
 	}
-	data, err := u.httpGet(assetURL, 60*time.Second)
+	data, err := u.httpGet(assetURL, 60*time.Second, false)
 	if err != nil {
 		return err
 	}

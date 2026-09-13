@@ -83,7 +83,7 @@ func main() {
 		}
 	}
 
-	maybePrintUpdateNotice(os.Args[1:], defaultUpdater(), os.Stderr)
+	maybePrintUpdateNotice(defaultUpdater(), os.Stderr)
 
 	opts := parseArgs(os.Args[1:])
 	if err := os.Chdir(root); err != nil {

@@ -104,7 +104,7 @@ func TestNoticeWhenLatestIsNewer(t *testing.T) {
 	u.Version = "v1.0.0"
 
 	var buf bytes.Buffer
-	maybePrintUpdateNotice([]string{"--help"}, u, &buf)
+	maybePrintUpdateNotice(u, &buf)
 	out := buf.String()
 	if !strings.Contains(out, "v1.2.0") {
 		t.Fatalf("missing new version in %q", out)
@@ -127,7 +127,7 @@ func TestNoticeAbsentWhenLatestEqualOrOlder(t *testing.T) {
 		u := testUpdater(t, srv, nil)
 		u.Version = "v1.0.0"
 		var buf bytes.Buffer
-		maybePrintUpdateNotice([]string{"--version"}, u, &buf)
+		maybePrintUpdateNotice(u, &buf)
 		srv.Close()
 		out := buf.String()
 		if out != "" {
@@ -139,18 +139,17 @@ func TestNoticeAbsentWhenLatestEqualOrOlder(t *testing.T) {
 	}
 }
 
-func TestNoticeSkippedForUpdateCommand(t *testing.T) {
+func TestNoticeOnUpdateCommand(t *testing.T) {
 	gh := &fakeGitHub{tag: "v9.9.9", asset: []byte("x")}
 	srv := gh.start(t)
 	defer srv.Close()
 	u := testUpdater(t, srv, nil)
+	u.Version = "v1.0.0"
 	var buf bytes.Buffer
-	maybePrintUpdateNotice([]string{"--update"}, u, &buf)
-	if buf.Len() != 0 {
-		t.Fatalf("update cmd should not nag: %q", buf.String())
-	}
-	if gh.fetches.Load() != 0 {
-		t.Fatalf("update cmd should not fetch for nag, fetches=%d", gh.fetches.Load())
+	maybePrintUpdateNotice(u, &buf)
+	out := buf.String()
+	if !strings.Contains(out, "v9.9.9") || !strings.Contains(out, "robld --update") {
+		t.Fatalf("every command including --update must nag: %q", out)
 	}
 }
 
@@ -192,7 +191,7 @@ func TestNoticeSurvivesFailedGitHub(t *testing.T) {
 	defer srv.Close()
 	u := testUpdater(t, srv, nil)
 	var buf bytes.Buffer
-	maybePrintUpdateNotice([]string{"--help"}, u, &buf)
+	maybePrintUpdateNotice(u, &buf)
 	if buf.Len() != 0 {
 		t.Fatalf("failed check must not nag: %q", buf.String())
 	}
