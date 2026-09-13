@@ -18,9 +18,10 @@ Have the user (or you) copy the install prompt from https://robld.com/ into the 
    - https://robld.com/releases/latest/robld-darwin-arm64
    - https://robld.com/releases/latest/robld-darwin-amd64
    - https://robld.com/releases/latest/robld-windows-amd64.exe
-3. Put it on PATH (`~/.local/bin/robld` on macOS, `%LOCALAPPDATA%\Programs\robld\robld.exe` on Windows).
-4. From the project folder, run `robld --install` once. That writes the Roblox skill for Claude, Grok, Codex, Cursor, and `.agents`.
-5. Then the human can prompt you to create or work on a game in the current folder.
+3. Verify the file's sha256 against https://robld.com/releases/latest.json (the `sha256` field for that asset). Do not install if it does not match.
+4. Put it on PATH (`~/.local/bin/robld` on macOS, `%LOCALAPPDATA%\Programs\robld\robld.exe` on Windows).
+5. From the project folder, run `robld --install` once. That writes the Roblox skill for Claude, Grok, Codex, Cursor, and `.agents`.
+6. Then the human can prompt you to create or work on a game in the current folder.
 
 Machine-readable release metadata (version, date, sha256, download URLs):
 - Latest: https://robld.com/releases/latest.json

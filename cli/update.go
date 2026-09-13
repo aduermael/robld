@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,6 +48,7 @@ type githubRelease struct {
 	Assets  []struct {
 		Name               string `json:"name"`
 		BrowserDownloadURL string `json:"browser_download_url"`
+		Digest             string `json:"digest"`
 	} `json:"assets"`
 }
 
@@ -265,6 +268,28 @@ func (u *updater) httpGet(url string, timeout time.Duration, githubJSON bool) ([
 	return body, nil
 }
 
+func sha256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func normalizeSHA256(s string) string {
+	s = strings.TrimSpace(strings.ToLower(s))
+	return strings.TrimPrefix(s, "sha256:")
+}
+
+func verifySHA256(data []byte, expected string) error {
+	want := normalizeSHA256(expected)
+	if want == "" {
+		return fmt.Errorf("missing sha256")
+	}
+	got := sha256Hex(data)
+	if got != want {
+		return fmt.Errorf("sha256 mismatch: got %s want %s", got, want)
+	}
+	return nil
+}
+
 func releaseAssetName(goos, goarch string) string {
 	name := "robld-" + goos + "-" + goarch
 	if goos == "windows" {
@@ -336,10 +361,11 @@ func (u *updater) Update() error {
 	_ = u.writeCache(updateCache{CheckedAt: u.now(), Latest: rel.TagName})
 
 	want := releaseAssetName(u.goos(), u.goarch())
-	var assetURL string
+	var assetURL, digest string
 	for _, a := range rel.Assets {
 		if a.Name == want {
 			assetURL = a.BrowserDownloadURL
+			digest = a.Digest
 			break
 		}
 	}
@@ -352,6 +378,9 @@ func (u *updater) Update() error {
 	}
 	if len(data) == 0 {
 		return fmt.Errorf("empty download for %s", want)
+	}
+	if err := verifySHA256(data, digest); err != nil {
+		return fmt.Errorf("%s: %w", want, err)
 	}
 	exe := u.Executable
 	if exe == "" {

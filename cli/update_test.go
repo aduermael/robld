@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -42,6 +44,7 @@ func TestUsageMentionsInstallVersionUpdate(t *testing.T) {
 type fakeGitHub struct {
 	tag        string
 	asset      []byte
+	digest     string // empty = hash of asset; "-" = omit
 	fetches    atomic.Int32
 	downloads  atomic.Int32
 	failLatest bool
@@ -57,12 +60,22 @@ func (f *fakeGitHub) start(t *testing.T) *httptest.Server {
 			http.Error(w, "nope", http.StatusBadGateway)
 			return
 		}
+		asset := map[string]string{
+			"name":                 assetName,
+			"browser_download_url": "http://" + r.Host + "/asset",
+		}
+		switch f.digest {
+		case "-":
+			// omit digest so Update must refuse
+		case "":
+			sum := sha256.Sum256(f.asset)
+			asset["digest"] = "sha256:" + hex.EncodeToString(sum[:])
+		default:
+			asset["digest"] = f.digest
+		}
 		payload := map[string]any{
 			"tag_name": f.tag,
-			"assets": []map[string]string{{
-				"name":                 assetName,
-				"browser_download_url": "http://" + r.Host + "/asset",
-			}},
+			"assets":   []map[string]string{asset},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(payload)
@@ -255,5 +268,51 @@ func TestUpdateReplacesBinaryAndInstallsSkill(t *testing.T) {
 		if string(b) != "skill-from-new-binary\n" {
 			t.Errorf("%s: %q", rel, b)
 		}
+	}
+}
+
+func TestUpdateRejectsChecksumMismatch(t *testing.T) {
+	gh := &fakeGitHub{tag: "v9.9.9", asset: []byte("payload"), digest: "sha256:" + strings.Repeat("0", 64)}
+	srv := gh.start(t)
+	defer srv.Close()
+	u := testUpdater(t, srv, nil)
+	exe := filepath.Join(u.DestRoot, "robld-bin")
+	if err := os.WriteFile(exe, []byte("old-binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	u.Executable = exe
+	err := u.Update()
+	if err == nil || !strings.Contains(err.Error(), "sha256 mismatch") {
+		t.Fatalf("want sha256 mismatch, got %v", err)
+	}
+	got, err := os.ReadFile(exe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "old-binary" {
+		t.Fatalf("binary replaced on mismatch: %q", got)
+	}
+}
+
+func TestUpdateRejectsMissingChecksum(t *testing.T) {
+	gh := &fakeGitHub{tag: "v9.9.9", asset: []byte("payload"), digest: "-"}
+	srv := gh.start(t)
+	defer srv.Close()
+	u := testUpdater(t, srv, nil)
+	exe := filepath.Join(u.DestRoot, "robld-bin")
+	if err := os.WriteFile(exe, []byte("old-binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	u.Executable = exe
+	err := u.Update()
+	if err == nil || !strings.Contains(err.Error(), "missing sha256") {
+		t.Fatalf("want missing sha256, got %v", err)
+	}
+	got, err := os.ReadFile(exe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "old-binary" {
+		t.Fatalf("binary replaced without checksum: %q", got)
 	}
 }
