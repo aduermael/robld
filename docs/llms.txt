@@ -1,0 +1,42 @@
+# robld
+
+> Roblox Studio interface for agents. A CLI (`robld`, pronounced "robuild") so coding agents (Claude Code, Codex, Grok Build, Cursor, and similar) can work on Roblox games like a pro.
+
+This is the product page for humans and agents: https://aduermael.github.io/robld/
+
+## Prerequisites
+
+- Roblox Studio must be installed: https://create.roblox.com/download
+- macOS or Windows only. Roblox Studio is not available on Linux, so robld cannot work on Linux.
+
+## Install
+
+Have the user (or you) copy the install prompt from https://aduermael.github.io/robld/ into the coding agent. That is the whole install:
+
+1. Confirm the OS is macOS or Windows and that Roblox Studio is installed. If Linux, stop.
+2. Download the matching binary from the latest GitHub release.
+   - https://github.com/aduermael/robld/releases/latest/download/robld-darwin-arm64
+   - https://github.com/aduermael/robld/releases/latest/download/robld-darwin-amd64
+   - https://github.com/aduermael/robld/releases/latest/download/robld-windows-amd64.exe
+3. Put it on PATH (`~/.local/bin/robld` on macOS, `%LOCALAPPDATA%\Programs\robld\robld.exe` on Windows).
+4. From the project folder, run `robld --install` once. That writes the Roblox skill for Claude, Grok, Codex, Cursor, and `.agents`.
+5. Then the human can prompt you to create or work on a game in the current folder.
+
+Prefer the release binary over building from source. Do not ask the user to run these steps by hand unless a permission dialog needs a human.
+
+## After install
+
+- Run `robld` from the game folder until stdout contains `READY:`.
+- `robld --new "Name"` creates a new place. A Roblox game URL or place id also works.
+- Luau lives on disk (Studio Script Sync). World state is `place.rbxlx`. Playtest, inspect, parts, and assets go through Studio MCP.
+- If `git` is installed and the folder is not a repository, `git init` and commit often.
+
+## Links
+
+- [Landing page](https://aduermael.github.io/robld/): install prompt for humans
+- [GitHub](https://github.com/aduermael/robld): source, issues, releases
+- [Latest release](https://github.com/aduermael/robld/releases/latest): CLI binaries
+- [README](https://github.com/aduermael/robld/blob/main/README.md): project overview
+- [START.md](https://github.com/aduermael/robld/blob/main/START.md): how-to
+- [Roblox Studio](https://create.roblox.com/download): required
+- [Author on X](https://x.com/aduermael): @aduermael
