@@ -2,7 +2,7 @@
 
 If the skill is missing, run `robld --install`. Run `robld` from the game folder until stdout contains `READY:`. Build with `cd cli && go build -o robld .` (Windows: `cd cli; go build -o robld.exe .`). Non-interactive, re-runnable, state in `place.json`. `robld --version` prints the stamped build; if output says a new version is available, run `robld --update`.
 
-- Studio MCP is expected on after `READY: Script Sync + MCP`. Do not simulate continuous WASD/mouse with MCP input tools — use navigation/teleport + screenshots.
+- Studio MCP is expected on after `READY: Script Sync + MCP`. Do not simulate continuous WASD/mouse with MCP input tools — use navigation/teleport, screenshots, or Luau that drives control live in play.
 - Exit **0** `READY:` — Script Sync + MCP are up. Proceed.
 - Exit **1** `NEED_PLACE:` — `robld --new` / `robld --new "Name"`, or a place id / game URL. Re-run.
 - Exit **1** `ERROR:` — show the message (usually Studio missing).

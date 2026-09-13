@@ -131,14 +131,15 @@ Call `list_roblox_studios` once per session if you do not have `studio_id`.
 - **Discrete UI / keys:** `user_mouse_input` / `user_keyboard_input` for one-shot UI (click a button, type in a field) — not continuous locomotion
 - **Long scenarios:** MCP `subagent` type `playtest` when available
 
-### Player movement — do not fake WASD
+### Player movement — do not fake WASD via MCP
 
 Studio MCP is **turn-based**. `user_keyboard_input` / `user_mouse_input` send discrete actions between agent turns. That is a **poor** way to simulate smooth, human-like walking, camera look, or strafing (tested: feels wrong, burns turns, unreliable for “does this feel good?”).
 
 - Do **not** drive continuous locomotion with long WASD / mouse-move MCP sequences.
 - Prefer **`character_navigation`** or **`execute_luau`** (`HumanoidRootPart.CFrame`, `Humanoid:MoveTo`, teleport, checkpoint spawn) when you only need the character placed to test systems.
 - Prefer **console + `screen_capture` + inspect** to verify outcomes without piloting.
-- If continuous control *feel* matters, ask the **user** to play that pass in Studio; keep MCP for setup, assertions, and world edits.
+- For **continuous / reactive control** (chase AI, auto-run to a point, hold a key while something happens, environment-driven locomotion): **write Luau on disk** that handles input or control live in play (`UserInputService`, `ContextActionService`, `Humanoid:Move` / `MoveTo`, RunService steppers, etc.). That runs every frame in Studio — MCP only starts play, watches console/screenshots, and asserts. Put those scripts under the synced tree like any other game code.
+- If a human’s control *feel* still matters, ask the **user** to play that pass; keep MCP for setup, assertions, and world edits.
 
 Official tool overview: [Studio MCP](https://create.roblox.com/docs/studio/mcp).
 
@@ -187,7 +188,7 @@ Use this after MCP world edits (parts, meshes, lighting). Luau still goes throug
 1. `robld` until `READY:`.
 2. Edit Luau on disk.
 3. After adding a ModuleScript, wait until dump `instances[]` lists it.
-4. Playtest via MCP (expected). Use navigation/teleport, not WASD spam. If MCP is down, F5 / Start Test Session and the latest `*_last.log` as a bridge.
+4. Playtest via MCP (expected). Prefer navigation/teleport, or Luau that drives control live — not WASD spam via MCP. If MCP is down, F5 / Start Test Session and the latest `*_last.log` as a bridge.
 5. Read console / screenshot / inspect.
 6. Stop play. Fix files on disk, not play-mode script source.
 7. If the DataModel changed (not just Luau), `robld save` then confirm `place.rbxlx` changed.

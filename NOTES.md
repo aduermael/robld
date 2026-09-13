@@ -328,6 +328,6 @@ Relevant True flags (not a complete list):
 
 `robld` probes Studio MCP (`tools/list`) and prefers `READY: Script Sync + MCP`. Agents should treat MCP as required for playtest/world work.
 
-**Player input tools are turn-based.** Continuous WASD / mouse-look via `user_keyboard_input` / `user_mouse_input` feels bad and is not a substitute for human play. Prefer `character_navigation`, Luau teleport/`MoveTo`, screenshots, and console assertions.
+**Player input tools are turn-based.** Continuous WASD / mouse-look via `user_keyboard_input` / `user_mouse_input` feels bad and is not a substitute for human play. Prefer `character_navigation`, Luau teleport/`MoveTo`, screenshots, and console assertions. For continuous or environment-reactive control, write synced Luau that handles input/control live in play; use MCP to start play and observe.
 
 Docs: [Studio MCP](https://create.roblox.com/docs/studio/mcp).
