@@ -67,6 +67,10 @@ var scriptSyncPrefs = []studioPref{
 	},
 }
 
+// MCP: Studio "Enable Studio as MCP server" (Assistant → Manage MCP Servers) also lives in
+// GlobalSettings. robld should turn that on before launch so agents never rely on a manual
+// toggle. Property name TBD — capture with `robld dump` / GlobalSettings on a machine where
+// the setting is on, then add it to extraStudioPrefs like the rows below.
 // Extra Studio properties that make the robld plugin usable without a restart.
 var extraStudioPrefs = []studioPref{
 	{

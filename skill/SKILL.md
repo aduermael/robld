@@ -21,8 +21,9 @@ description: >
 These are the only human steps. Name the UI; do not invite them to run CLI.
 
 1. **Studio login** if Studio shows a sign-in window.
-2. **Assistant → … → Manage MCP Servers → enable Studio as MCP server** (once per machine).
-3. **Accessibility** for the app that launches robld (menus, save, F5). **Screen Recording** too if you need screenshots (`screencapture` / MCP `screen_capture`).
+2. **Accessibility** for the app that launches robld (menus, save, F5). **Screen Recording** too if you need screenshots (`screencapture` / MCP `screen_capture`).
+
+**MCP is expected on.** `robld` assumes Studio’s MCP server is active for playtest/world work. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**. (`robld` will write that preference before launch once the GlobalSettings property name is confirmed from a dump.)
 
 Do not ask the user to click **Save / Don't Save / Cancel** on restart. robld saves, sends Enter, waits, then force-quits if Studio is still up.
 
@@ -52,8 +53,8 @@ You run `robld` from the game folder. Pass ids as args; do not prompt. Do not st
 
 | Exit | What you do |
 |---|---|
-| 0 and `READY: Script Sync + MCP` | Script Sync and Studio MCP tools/list are live. Continue. |
-| 0 and `READY: Script Sync` | Script Sync is up. MCP is not. Follow `NEED_USER:` for the Assistant MCP toggle. Keep working on Luau; use the playtest fallback below. |
+| 0 and `READY: Script Sync + MCP` | Script Sync and Studio MCP tools/list are live. This is the normal path — continue. |
+| 0 and `READY: Script Sync` | Script Sync is up but MCP probe failed. Unusual. Surface `NEED_USER:` (enable Studio as MCP server) once, then prefer fixing MCP over living in the playtest fallback. |
 | 1 `NEED_PLACE:` | Create a local place or bind a place id / game URL. Re-run. |
 | 1 `ERROR:` | Show the message (usually Studio missing). Do not invent a connection. |
 | 2 `NOT_READY:` | Show the printed Sync to… steps. After the user does them, re-run. |
@@ -114,21 +115,32 @@ Under **StarterPlayerScripts** (the default `src/client` root), use `*.local.lua
 
 After adding a ModuleScript, wait until plugin dump `instances[]` lists it (`robld dump` / unsliced `robuildDump`, not the truncated `ROBUILD_JSON` log line). Then playtest.
 
-## MCP — only if the tools exist
+## MCP — expected on
 
 Call `list_roblox_studios` once per session if you do not have `studio_id`.
 
-If `list_roblox_studios` is **missing** or returns **“Unable to reach Roblox Studio”**, **stop** using `start_stop_play`, `get_console_output`, and `screen_capture`. Use the playtest fallback. Do not assume those tools exist because `READY:` printed or `.mcp.json` was written.
+`robld` expects Studio MCP to be active. After a true `READY: Script Sync + MCP`, use the tools. If `list_roblox_studios` is **missing** or returns **“Unable to reach Roblox Studio”**, **stop** using `start_stop_play`, `get_console_output`, and `screen_capture` — surface the enable-MCP `NEED_USER` once, then use the playtest fallback only as a bridge. Do not assume tools exist just because `.mcp.json` was written.
 
-When MCP is connected, use it for:
+### Use MCP for
 
-- Playtest: `start_stop_play`, `get_console_output`, `screen_capture`, `get_studio_state`
-- Input in play: `character_navigation`, `user_keyboard_input`, `user_mouse_input`
-- Inspect: `search_game_tree`, `inspect_instance`
-- Queries: `execute_luau` with `datamodel_type` Edit (or Client/Server only while playing)
-- World: instances, `insert_asset`, `search_asset`, `generate_mesh`, `generate_material`, `generate_procedural_model`
+- **Playtest:** `start_stop_play`, `get_console_output`, `screen_capture`, `get_studio_state`
+- **Inspect:** `search_game_tree`, `inspect_instance`
+- **Queries / setup:** `execute_luau` with `datamodel_type` Edit (or Client/Server only while playing)
+- **World:** instances, `insert_asset`, `search_asset`, `generate_mesh`, `generate_material`, `generate_procedural_model`
+- **Coarse character placement:** `character_navigation` (go to a position or instance) when you need the avatar somewhere to assert state
+- **Discrete UI / keys:** `user_mouse_input` / `user_keyboard_input` for one-shot UI (click a button, type in a field) — not continuous locomotion
+- **Long scenarios:** MCP `subagent` type `playtest` when available
 
-Enable Studio as MCP server: Assistant → **…** → Manage MCP Servers.
+### Player movement — do not fake WASD
+
+Studio MCP is **turn-based**. `user_keyboard_input` / `user_mouse_input` send discrete actions between agent turns. That is a **poor** way to simulate smooth, human-like walking, camera look, or strafing (tested: feels wrong, burns turns, unreliable for “does this feel good?”).
+
+- Do **not** drive continuous locomotion with long WASD / mouse-move MCP sequences.
+- Prefer **`character_navigation`** or **`execute_luau`** (`HumanoidRootPart.CFrame`, `Humanoid:MoveTo`, teleport, checkpoint spawn) when you only need the character placed to test systems.
+- Prefer **console + `screen_capture` + inspect** to verify outcomes without piloting.
+- If continuous control *feel* matters, ask the **user** to play that pass in Studio; keep MCP for setup, assertions, and world edits.
+
+Official tool overview: [Studio MCP](https://create.roblox.com/docs/studio/mcp).
 
 ## Playtest fallback (no MCP tools)
 
@@ -152,6 +164,7 @@ Studio Settings → Script Sync are **not** in `place.rbxlx`. They live in Studi
 | Resume conflicted sync on place open | Always keep local |
 | Keep local files/directories after Stop Sync | Keep local files |
 | File extension | `.luau` |
+| Enable Studio as MCP server | on (planned GlobalSettings write; property name TBD from dump) |
 
 The main `robld` command also:
 
@@ -174,7 +187,7 @@ Use this after MCP world edits (parts, meshes, lighting). Luau still goes throug
 1. `robld` until `READY:`.
 2. Edit Luau on disk.
 3. After adding a ModuleScript, wait until dump `instances[]` lists it.
-4. Playtest via MCP if `list_roblox_studios` works; otherwise F5 / Start Test Session and the latest `*_last.log`.
+4. Playtest via MCP (expected). Use navigation/teleport, not WASD spam. If MCP is down, F5 / Start Test Session and the latest `*_last.log` as a bridge.
 5. Read console / screenshot / inspect.
 6. Stop play. Fix files on disk, not play-mode script source.
 7. If the DataModel changed (not just Luau), `robld save` then confirm `place.rbxlx` changed.

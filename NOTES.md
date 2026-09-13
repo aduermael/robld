@@ -50,6 +50,7 @@ Item class `Studio`, properties:
 | `ActionOnStopSync` | `1` | Keep local files after Stop Sync |
 | `DefaultScriptSyncFileType` | `1` | `.luau` |
 | `ReloadLocalPluginsOnChange` | `true` | so `robuild_agent.lua` reloads |
+| *(TBD — dump GlobalSettings)* “Enable Studio as MCP server” | `true` | Assistant → Manage MCP Servers. Patch before Studio launch once the property name is known. |
 
 `robld prefs` / `robld prefs apply`. Main `robld` applies the same set when it **launches** Studio.
 
@@ -320,3 +321,13 @@ Relevant True flags (not a complete list):
 5. Treat `overwriting N synced hierarchies` as READY; do not require a parseable `ROBUILD_JSON`.
 6. After first KeepLocal resume, **Save** so `place.rbxlx` matches disk.
 7. `robld dump` after any sync mystery; read `REPORT.txt` plus the newest `*Studio*_last.log`.
+
+---
+
+## MCP expectations
+
+`robld` probes Studio MCP (`tools/list`) and prefers `READY: Script Sync + MCP`. Agents should treat MCP as required for playtest/world work.
+
+**Player input tools are turn-based.** Continuous WASD / mouse-look via `user_keyboard_input` / `user_mouse_input` feels bad and is not a substitute for human play. Prefer `character_navigation`, Luau teleport/`MoveTo`, screenshots, and console assertions.
+
+Docs: [Studio MCP](https://create.roblox.com/docs/studio/mcp).
