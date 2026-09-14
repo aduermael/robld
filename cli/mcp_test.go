@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -159,5 +160,64 @@ func TestMCPProbeOKClassifier(t *testing.T) {
 	}
 	if !mcpProbeOK(1, `{"tools":[{"name":"list_roblox_studios"}]}`) {
 		t.Fatal("non-empty tools should be ok")
+	}
+}
+
+func TestPluginSettingsUserID(t *testing.T) {
+	p := filepath.Join("Documents", "Roblox", "7924826801", "InstalledPlugins", "0", "settings.json")
+	if got := pluginSettingsUserID(p); got != "7924826801" {
+		t.Fatalf("got %q", got)
+	}
+	if !isLoggedOutPluginSettings(filepath.Join("Roblox", "0", "InstalledPlugins", "0", "settings.json")) {
+		t.Fatal("user 0 is logged-out namespace")
+	}
+}
+
+func TestEnsureJSONBoolMergesAndNoops(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "settings.json")
+	if err := os.WriteFile(p, []byte(`{"other":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := ensureJSONBool(p, assistantMCPSettingKey, true)
+	if err != nil || !changed {
+		t.Fatalf("first write changed=%v err=%v", changed, err)
+	}
+	raw, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if !jsonBoolTrue(m[assistantMCPSettingKey]) {
+		t.Fatalf("missing enable key: %s", raw)
+	}
+	if m["other"].(float64) != 1 {
+		t.Fatalf("must keep other keys: %s", raw)
+	}
+	changed, err = ensureJSONBool(p, assistantMCPSettingKey, true)
+	if err != nil || changed {
+		t.Fatalf("second write should be a no-op: changed=%v err=%v", changed, err)
+	}
+}
+
+func TestEnsureJSONBoolCreates(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "nested", "settings.json")
+	changed, err := ensureJSONBool(p, assistantMCPSettingKey, true)
+	if err != nil || !changed {
+		t.Fatalf("create changed=%v err=%v", changed, err)
+	}
+	if !jsonFileHasTrue(p, assistantMCPSettingKey) {
+		t.Fatal("created file must have enable key")
+	}
+}
+
+func TestJSONBoolTrue(t *testing.T) {
+	if !jsonBoolTrue(true) || jsonBoolTrue(false) {
+		t.Fatal("bool")
+	}
+	if !jsonBoolTrue("True") || !jsonBoolTrue("true") || jsonBoolTrue("false") {
+		t.Fatal("string")
 	}
 }

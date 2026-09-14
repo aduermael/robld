@@ -21,7 +21,7 @@ These are the only human steps. Name the UI; do not invite them to run CLI.
 1. **Studio login** if Studio shows a sign-in window.
 2. **macOS Accessibility** for the app that runs robld (Terminal / Grok / Cursor / …): System Settings → Privacy & Security → Accessibility — needed for File → Save / menu keystrokes, not for screenshots.
 
-**MCP is expected on.** `robld` assumes Studio’s MCP server is active for playtest/world work. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**. (`robld` will write that preference before launch once the GlobalSettings property name is confirmed from a dump.)
+**MCP is expected on.** `robld` writes `Assistant-ExternalMCPEnabled` before it launches Studio. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable after that: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**.
 
 Do not ask the user to click **Save / Don't Save / Cancel** on restart. robld saves, sends Enter, waits, then force-quits if Studio is still up.
 
@@ -164,7 +164,7 @@ Studio Settings → Script Sync are **not** in the place file. They live in Stud
 | Resume conflicted sync on place open | Always keep local |
 | Keep local files/directories after Stop Sync | Keep local files |
 | File extension | `.luau` |
-| Enable Studio as MCP server | on (planned GlobalSettings write; property name TBD from dump) |
+| Enable Studio as MCP server | on (`Assistant-ExternalMCPEnabled` in `InstalledPlugins/0/settings.json`) |
 
 The main `robld` command also:
 

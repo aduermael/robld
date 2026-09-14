@@ -67,11 +67,8 @@ var scriptSyncPrefs = []studioPref{
 	},
 }
 
-// MCP: Studio "Enable Studio as MCP server" (Assistant → Manage MCP Servers) also lives in
-// GlobalSettings. robld should turn that on before launch so agents never rely on a manual
-// toggle. Property name TBD — capture with `robld dump` / GlobalSettings on a machine where
-// the setting is on, then add it to extraStudioPrefs like the rows below.
 // Extra Studio properties that make the robld plugin usable without a restart.
+// MCP enable is not a GlobalSettings property — see assistantMCPSettingKey.
 var extraStudioPrefs = []studioPref{
 	{
 		UI:   "Reload local plugins on change",
@@ -118,7 +115,7 @@ func runPrefs(action string) {
 
 	switch action {
 	case "", "show":
-		if prefsNeedApply(values) {
+		if prefsNeedApply(values) || studioMCPSettingNeedApply() {
 			fmt.Println()
 			if running {
 				fmt.Println("NOT_READY: close Roblox Studio, then:  robld prefs apply")
@@ -139,18 +136,24 @@ func runPrefs(action string) {
 		if err != nil {
 			fail(exitError, "ERROR: %v", err)
 		}
-		if !changed {
+		mcpChanged := applyStudioMCPSetting()
+		if !changed && !mcpChanged {
 			fmt.Println()
 			fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": Script Sync prefs already match"))
 			return
 		}
-		if err := replaceFile(path, out); err != nil {
-			fail(exitError, "ERROR: writing %s: %v", path, err)
+		if changed {
+			if err := replaceFile(path, out); err != nil {
+				fail(exitError, "ERROR: writing %s: %v", path, err)
+			}
+			fmt.Println()
+			fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": wrote Script Sync prefs"))
+			fmt.Printf("  %s\n", path)
+			fmt.Println("  backup: " + path + ".robld-bak")
+		} else {
+			fmt.Println()
+			fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": wrote Studio MCP enable setting"))
 		}
-		fmt.Println()
-		fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": wrote Script Sync prefs"))
-		fmt.Printf("  %s\n", path)
-		fmt.Println("  backup: " + path + ".robld-bak")
 		fmt.Println("These do not restore per-place Sync to… folder bindings.")
 	default:
 		fail(exitError, "Unknown prefs action %q. Use: robld prefs | robld prefs apply", action)
@@ -202,6 +205,21 @@ func printPrefsReport(path string, extras []string, values map[string]string, ru
 			}
 			fmt.Printf("  %-48s  %-28s  %s\n", p.UI, formatPref(p, cur), status)
 		}
+	}
+	fmt.Println()
+	fmt.Println("Studio MCP enable (Assistant → Manage MCP Servers), not GlobalSettings:")
+	fmt.Printf("  %s  want true\n", assistantMCPSettingKey)
+	mcpFiles := 0
+	for _, p := range studioMCPPluginSettingFiles() {
+		mcpFiles++
+		status := "MISSING KEY"
+		if jsonFileHasTrue(p, assistantMCPSettingKey) {
+			status = "ok"
+		}
+		fmt.Printf("  %-48s  %s\n", p, status)
+	}
+	if mcpFiles == 0 {
+		fmt.Println("  (no InstalledPlugins/0/settings.json yet — login to Studio once)")
 	}
 	fmt.Println()
 	fmt.Println("These are per-machine Studio Settings → Script Sync.")
@@ -265,24 +283,23 @@ func applyScriptSyncPrefsIfNeeded() {
 
 func reportScriptSyncPrefsBrief() {
 	path, _ := findGlobalSettings()
-	if path == "" {
-		return
+	if path != "" {
+		raw, err := os.ReadFile(path)
+		if err == nil {
+			if values, err := readStudioProps(raw); err == nil {
+				if !prefsNeedApply(values) {
+					info("Script Sync prefs file matches agent defaults (Studio may still have unsaved Settings until quit).")
+				} else {
+					warn("Script Sync prefs in %s are not agent defaults.", path)
+					warn("If you just changed them in Studio, they land in this file when Studio quits.")
+					warn("Otherwise close Studio and run:  robld prefs apply")
+				}
+			}
+		}
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return
+	if studioMCPSettingNeedApply() {
+		warn("Studio MCP setting %s is not on. Close Studio and re-run robld so it can write the enable flag.", assistantMCPSettingKey)
 	}
-	values, err := readStudioProps(raw)
-	if err != nil {
-		return
-	}
-	if !prefsNeedApply(values) {
-		info("Script Sync prefs file matches agent defaults (Studio may still have unsaved Settings until quit).")
-		return
-	}
-	warn("Script Sync prefs in %s are not agent defaults.", path)
-	warn("If you just changed them in Studio, they land in this file when Studio quits.")
-	warn("Otherwise close Studio and run:  robld prefs apply")
 }
 
 func studioSettingsDirs() []string {

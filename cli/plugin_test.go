@@ -87,6 +87,17 @@ func TestPluginOmitsGameSourceAfterSeed(t *testing.T) {
 	}
 }
 
+func TestPluginEnablesExternalMCP(t *testing.T) {
+	root = t.TempDir()
+	src, err := renderPluginSource(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(src, `plugin:SetSetting("Assistant-ExternalMCPEnabled", true)`) {
+		t.Fatal("plugin must persist Assistant-ExternalMCPEnabled so Studio MCP stays on")
+	}
+}
+
 func TestCollectSeedFilesLocalScript(t *testing.T) {
 	root = t.TempDir()
 	m := greenfieldManifest()

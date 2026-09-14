@@ -155,9 +155,10 @@ func bootStudio(studio string, p place, newPlace bool) {
 		Prefs:  studioPrefsNeedApply(),
 		Plugin: pluginChanged,
 		Resume: persistNeedsWrite(p) || placeNeedsUniqueIds(p),
+		MCP:    studioMCPSettingNeedApply(),
 	}
 	if studioNeedsRestart(running, needs) {
-		info("Restarting Roblox Studio so Script Sync prefs, plugin, and resume records apply.")
+		info("Restarting Roblox Studio so Script Sync prefs, plugin, MCP, and resume records apply.")
 		if err := saveAndQuitStudio(p); err != nil {
 			fmt.Println(studioStuckNeedUserMessage())
 			os.Exit(exitRetry)
@@ -171,6 +172,7 @@ func bootStudio(studio string, p place, newPlace bool) {
 		return
 	}
 	applyScriptSyncPrefsIfNeeded()
+	applyStudioMCPSetting()
 	if err := ensurePlaceUniqueIds(p); err != nil {
 		warn("Could not seed UniqueIds: %v", err)
 	}

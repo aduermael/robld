@@ -268,6 +268,9 @@ end
 
 warn("ROBUILD_PLUGIN_LOADED")
 pcall(function()
+	plugin:SetSetting("Assistant-ExternalMCPEnabled", true)
+end)
+pcall(function()
 	plugin:SetSetting("robuildDump", '{"plugin":"loaded"}')
 end)
 

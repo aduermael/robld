@@ -8,7 +8,7 @@ If the skill is missing, run `robld --install`. Run `robld` from the game folder
 - Exit **1** `ERROR:` — show the message (usually Studio missing).
 - Exit **2** `NOT_READY:` — user Sync to… in Explorer, then re-run `robld`. Do not start Script Sync yourself.
 - After MCP **world** edits (parts, meshes), run `robld save` (macOS) so `place.rbxlx` updates. Do not restart Studio to persist. If Accessibility blocks keystrokes, tell the user to enable it.
-- Script Sync Studio Settings live in `GlobalSettings_13.xml`. Main `robld` writes them and may **restart Studio** on macOS so they apply. `robld dump` writes `robuild-dump/` for inspection (includes `rbx-storage.txt` when that SQLite file exists).
+- Script Sync Studio Settings live in `GlobalSettings_13.xml`. Studio MCP enable is `Assistant-ExternalMCPEnabled` in `InstalledPlugins/0/settings.json` (and `AssistantSettings/<userId>.json`). Main `robld` writes both and may **restart Studio** on macOS so they apply. `robld dump` writes `robuild-dump/` for inspection (includes `rbx-storage.txt` when that SQLite file exists).
 - **`robuild-sync.json` is the per-project map** (Studio instance path ↔ disk folder). Different games use different trees; edit this file, do not assume `ServerScriptService/` on disk. `robld` does not overwrite an existing map. Put new Luau next to siblings under an already-mapped folder.
 - Script Sync resume bindings live in `com.roblox.RobloxStudio.plist` (`File_Sync_Persistence_Record_V1`). `robld` writes them when Studio is closed, from UniqueIds in `place.rbxlx` (`--new` seeds them) plus `robuild-sync.json`. Bind **services** (not nested Folders) — that is what Studio actually auto-resumes. If `NOT_READY`, user Sync to… once per root.
 

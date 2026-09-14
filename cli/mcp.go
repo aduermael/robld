@@ -2,11 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -35,6 +38,13 @@ func readySuffix(mcpOK bool) string {
 func mcpNeedUserMessage() string {
 	return "NEED_USER: Enable Studio as MCP server: Assistant → … → Manage MCP Servers → enable Studio as MCP server."
 }
+
+// Assistant → Manage MCP Servers → "Enable Studio as MCP server".
+// Confirmed on Studio 0.738 (dump 2026-09-13, MCP on): this JSON bool lives in
+// Documents/Roblox/<userId>/InstalledPlugins/0/settings.json (local-plugin
+// settings namespace). FFlagAssistantExternalMCPPluginSettingRedundancy is
+// True, so also write Library/Roblox/AssistantSettings/<userId>.json.
+const assistantMCPSettingKey = "Assistant-ExternalMCPEnabled"
 
 // mcpProbeOK is the shipped classifier: empty tools/list or
 // "Unable to reach Roblox Studio" is not MCP-ready.
@@ -267,4 +277,229 @@ func rpcTextContent(msg map[string]any) string {
 		b.WriteString(" error")
 	}
 	return b.String()
+}
+
+func jsonBoolTrue(v any) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return strings.EqualFold(strings.TrimSpace(t), "true")
+	default:
+		return false
+	}
+}
+
+func jsonFileHasTrue(path, key string) bool {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return false
+	}
+	return jsonBoolTrue(m[key])
+}
+
+func ensureJSONBool(path, key string, want bool) (bool, error) {
+	raw, err := os.ReadFile(path)
+	m := map[string]any{}
+	exists := err == nil
+	if exists {
+		if trim := bytes.TrimSpace(raw); len(trim) > 0 {
+			if json.Unmarshal(raw, &m) != nil {
+				return false, fmt.Errorf("%s: invalid JSON", path)
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		return false, err
+	}
+	if exists {
+		if v, ok := m[key]; ok && jsonBoolTrue(v) == want {
+			return false, nil
+		}
+	}
+	m[key] = want
+	out, err := json.Marshal(m)
+	if err != nil {
+		return false, err
+	}
+	out = append(out, '\n')
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return false, err
+	}
+	if err := os.WriteFile(path, out, 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func robloxUserDocumentsDirs() []string {
+	var dirs []string
+	home, err := os.UserHomeDir()
+	if err == nil && home != "" {
+		dirs = append(dirs,
+			filepath.Join(home, "Documents", "Roblox"),
+			filepath.Join(home, "Documents", "ROBLOX"),
+		)
+	}
+	if runtime.GOOS == "windows" || isWSL() {
+		if local := windowsLocalAppData(); local != "" {
+			dirs = append(dirs, filepath.Join(local, "Roblox"))
+		}
+	}
+	return dirs
+}
+
+func studioMCPPluginSettingFiles() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, base := range robloxUserDocumentsDirs() {
+		matches, _ := filepath.Glob(filepath.Join(base, "*", "InstalledPlugins", "0", "settings.json"))
+		for _, m := range matches {
+			abs, err := filepath.Abs(m)
+			if err != nil {
+				abs = m
+			}
+			if seen[abs] {
+				continue
+			}
+			if st, err := os.Stat(abs); err != nil || st.IsDir() {
+				continue
+			}
+			seen[abs] = true
+			out = append(out, abs)
+		}
+	}
+	return out
+}
+
+func pluginSettingsUserID(path string) string {
+	// .../<userId>/InstalledPlugins/0/settings.json
+	return filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(path))))
+}
+
+func isLoggedOutPluginSettings(path string) bool {
+	return pluginSettingsUserID(path) == "0"
+}
+
+func studioMCPSettingNeedApply() bool {
+	for _, p := range studioMCPPluginSettingFiles() {
+		if isLoggedOutPluginSettings(p) {
+			continue
+		}
+		if !jsonFileHasTrue(p, assistantMCPSettingKey) {
+			return true
+		}
+	}
+	return false
+}
+
+func studioUserIDs() []string {
+	seen := map[string]bool{}
+	var ids []string
+	add := func(id string) {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			return
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	for _, p := range studioMCPPluginSettingFiles() {
+		add(pluginSettingsUserID(p))
+	}
+	for _, dir := range studioSettingsDirs() {
+		matches, _ := filepath.Glob(filepath.Join(dir, "AssistantSettings", "*.json"))
+		for _, m := range matches {
+			add(strings.TrimSuffix(filepath.Base(m), filepath.Ext(m)))
+		}
+	}
+	return ids
+}
+
+func studioMCPSettingWriteTargets() []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(p string) {
+		if strings.TrimSpace(p) == "" {
+			return
+		}
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			abs = p
+		}
+		if seen[abs] {
+			return
+		}
+		seen[abs] = true
+		out = append(out, abs)
+	}
+	for _, p := range studioMCPPluginSettingFiles() {
+		add(p)
+	}
+	for _, id := range studioUserIDs() {
+		for _, base := range robloxUserDocumentsDirs() {
+			add(filepath.Join(base, id, "InstalledPlugins", "0", "settings.json"))
+		}
+		for _, dir := range studioSettingsDirs() {
+			add(filepath.Join(dir, "AssistantSettings", id+".json"))
+		}
+	}
+	return out
+}
+
+func applyStudioMCPSetting() bool {
+	n := 0
+	for _, path := range studioMCPSettingWriteTargets() {
+		changed, err := ensureJSONBool(path, assistantMCPSettingKey, true)
+		if err != nil {
+			warn("Could not write Studio MCP setting %s: %v", path, err)
+			continue
+		}
+		if changed {
+			n++
+			info("Wrote %s=true → %s", assistantMCPSettingKey, path)
+		}
+	}
+	if n == 0 && studioMCPSettingNeedApply() {
+		warn("Studio MCP setting %s is not on and no settings file could be written.", assistantMCPSettingKey)
+	}
+	return n > 0
+}
+
+func writeMCPSettingReport(w func(string, ...any)) {
+	w("== Studio MCP setting ==")
+	w("key %s  want true", assistantMCPSettingKey)
+	files := studioMCPPluginSettingFiles()
+	for _, dir := range studioSettingsDirs() {
+		matches, _ := filepath.Glob(filepath.Join(dir, "AssistantSettings", "*.json"))
+		files = append(files, matches...)
+	}
+	seen := map[string]bool{}
+	n := 0
+	for _, p := range files {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			abs = p
+		}
+		if seen[abs] {
+			continue
+		}
+		seen[abs] = true
+		n++
+		status := "MISSING KEY"
+		if jsonFileHasTrue(abs, assistantMCPSettingKey) {
+			status = "ok"
+		} else if raw, err := os.ReadFile(abs); err != nil {
+			status = err.Error()
+		} else if len(bytes.TrimSpace(raw)) == 0 {
+			status = "empty"
+		}
+		w("  %s  %s", abs, status)
+	}
+	if n == 0 {
+		w("  (no InstalledPlugins/0/settings.json or AssistantSettings/*.json yet)")
+	}
 }

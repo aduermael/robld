@@ -50,9 +50,16 @@ Item class `Studio`, properties:
 | `ActionOnStopSync` | `1` | Keep local files after Stop Sync |
 | `DefaultScriptSyncFileType` | `1` | `.luau` |
 | `ReloadLocalPluginsOnChange` | `true` | so `robuild_agent.lua` reloads |
-| *(TBD — dump GlobalSettings)* “Enable Studio as MCP server” | `true` | Assistant → Manage MCP Servers. Patch before Studio launch once the property name is known. |
 
-`robld prefs` / `robld prefs apply`. Main `robld` applies the same set when it **launches** Studio.
+MCP enable is **not** in GlobalSettings. Dump 2026-09-13 with the UI toggle on:
+
+- Key `Assistant-ExternalMCPEnabled` = JSON `true`
+- File `~/Documents/Roblox/<userId>/InstalledPlugins/0/settings.json` (same local-plugin settings blob as `robuildDump`)
+- Redundant copy (FFlagAssistantExternalMCPPluginSettingRedundancy): `~/Library/Roblox/AssistantSettings/<userId>.json`
+
+`robld` writes that bool when it launches Studio (Studio must be closed, same as other prefs). The plugin also `SetSetting("Assistant-ExternalMCPEnabled", true)`.
+
+`robld prefs` / `robld prefs apply`. Main `robld` applies Script Sync XML **and** the MCP enable JSON when it **launches** Studio.
 
 A user plugin **cannot** set most of these at runtime (`lacking capability RobloxScript` / `RobloxEngine`). XML patch is the real write. `ActionOnStopSync` did succeed from the plugin once; do not rely on that.
 

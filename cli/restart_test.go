@@ -13,6 +13,7 @@ func TestStudioNeedsRestart(t *testing.T) {
 		{Prefs: true},
 		{Plugin: true},
 		{Resume: true},
+		{MCP: true},
 	}
 	for _, n := range cases {
 		if !studioNeedsRestart(true, n) {

@@ -17,9 +17,9 @@ const (
 	scanMaxFiles     = 400
 )
 
-var scanNameHints = regexp.MustCompile(`(?i)(globalsettings|globalbasicsettings|placeidestate|scriptsync|filesync|clientsettings|rbx-storage|\.db$|sqlite)`)
+var scanNameHints = regexp.MustCompile(`(?i)(globalsettings|globalbasicsettings|placeidestate|scriptsync|filesync|clientsettings|rbx-storage|assistantsettings|\.db$|sqlite)`)
 
-var scanContentRe = regexp.MustCompile(`(?i)(AutoResumeSyncOnPlaceOpen|ActionOnAutoResumeSync|ActionOnStopSync|DefaultScriptSyncFileType|InstanceFileSync|ScriptSync|KeepLocalFiles|KeepLocal|InternalSync|LiveSync|placeIDEState|ROBUILD_JSON)`)
+var scanContentRe = regexp.MustCompile(`(?i)(AutoResumeSyncOnPlaceOpen|ActionOnAutoResumeSync|ActionOnStopSync|DefaultScriptSyncFileType|InstanceFileSync|ScriptSync|KeepLocalFiles|KeepLocal|InternalSync|LiveSync|placeIDEState|ROBUILD_JSON|Assistant-ExternalMCPEnabled|ExternalMCP)`)
 
 func runScan() {
 	fmt.Println("SCAN: looking for Studio Script Sync state on this machine")

@@ -17,7 +17,7 @@ import (
 
 const dumpFolderName = "robuild-dump"
 
-var dumpLogRe = regexp.MustCompile(`(?i)(script\s*sync|scriptsync|instancefilesync|auto.?resume|did not resume|sync to|ROBUILD|KeepLocal|placeIDEState|File_Sync|synced hierarch|user_robld|StartSync)`)
+var dumpLogRe = regexp.MustCompile(`(?i)(script\s*sync|scriptsync|instancefilesync|auto.?resume|did not resume|sync to|ROBUILD|KeepLocal|placeIDEState|File_Sync|synced hierarch|user_robld|StartSync|ExternalMCP|StudioMCP|AssistantSettings)`)
 
 func dumpDir() string {
 	if v := strings.TrimSpace(os.Getenv("ROBUILD_DUMP_DIR")); v != "" {
@@ -108,6 +108,9 @@ func runDump() {
 			}
 		}
 	}
+
+	w("")
+	writeMCPSettingReport(w)
 
 	w("")
 	w("== intended sync map (robuild-sync.json) ==")
@@ -301,6 +304,10 @@ func copyDumpFiles(dir string, needles []string, report *strings.Builder) []map[
 		for _, m := range matches {
 			try(m, true)
 		}
+		asst, _ := filepath.Glob(filepath.Join(d, "AssistantSettings", "*.json"))
+		for _, m := range asst {
+			try(m, true)
+		}
 	}
 	home, _ := os.UserHomeDir()
 	if home != "" {
@@ -384,6 +391,8 @@ func dumpNameHint(path string) bool {
 		strings.Contains(base, "globalsettings") ||
 		strings.Contains(base, "globalbasicsettings") ||
 		strings.Contains(base, "rbx-storage") ||
+		strings.Contains(lower, "assistantsettings") ||
+		strings.Contains(base, "assistant-externalmcp") ||
 		ext == ".db" || ext == ".sqlite" || ext == ".sqlite3" ||
 		strings.HasSuffix(lower, ".db-wal") || strings.HasSuffix(lower, ".db-shm")
 }
