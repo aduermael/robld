@@ -1,18 +1,16 @@
 ---
 name: robld
 description: >
-  Develop this Roblox game with robld, Studio Script Sync (Luau on disk),
-  a git-tracked place.rbxlx, and Studio MCP (playtest, world, assets). Use
-  when writing Luau, playtesting, inspecting the DataModel, inserting models,
-  generating meshes, or working in Roblox Studio. Triggers: Roblox, Studio,
-  Luau, Script Sync, playtest, MCP, DataModel, robld.
+  Use whenever the user wants to create or work on a Roblox game. Gives the
+  agent full control of Roblox Studio while keeping a local working directory
+  as the source of truth for scripts (easy to version with git) and driving
+  playtest/world through Studio MCP. Triggers: Roblox, Studio, Luau, game,
+  Script Sync, playtest, MCP, DataModel, robld.
 ---
 
 # Roblox: robld + Script Sync + Studio MCP
 
 `robld` (say *robuild*) bootstraps Studio Script Sync and MCP so you can edit Luau on disk while Studio stays open for playtest and the world.
-
-**Load this skill in the current session** after install (read this file now). Do not wait for an agent restart. Tell the user robld is installed, then ask: **“What game would you like to work on now?”**
 
 **Never ask the user to run `robld` commands or flags** unless they asked you to. You run them. User-facing talk is not a CLI cheat-sheet.
 
@@ -21,7 +19,7 @@ description: >
 These are the only human steps. Name the UI; do not invite them to run CLI.
 
 1. **Studio login** if Studio shows a sign-in window.
-2. **Accessibility** for the app that launches robld (menus, save, F5). **Screen Recording** too if you need screenshots (`screencapture` / MCP `screen_capture`).
+2. **Accessibility** for the app that launches robld (menus, save, F5) — not for screenshots.
 
 **MCP is expected on.** `robld` assumes Studio’s MCP server is active for playtest/world work. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**. (`robld` will write that preference before launch once the GlobalSettings property name is confirmed from a dump.)
 
@@ -36,7 +34,7 @@ Same command every time, from the game folder. Install from https://robld.com/ i
 | `robld` | Open the place in `place.json`, wait until Script Sync is up. Re-run until `READY:`. Restarts Studio only if prefs, plugin, or resume records need a write. |
 | `robld --new` / `robld --new "Name"` | Create a local `place.rbxlx` and `place.json` (UniqueIds seeded), then launch Studio. |
 | `robld <place-id-or-url>` | Bind an existing cloud place (or `robld --file place.rbxlx`). |
-| `robld --install` | Write this skill into the current project (Claude, Grok, Codex, Cursor, `.agents`). Then load it in this session. |
+| `robld --install` | Write this skill into the current project (Claude, Grok, Codex, Cursor, `.agents`). |
 | `robld --version` | Print the version. |
 | `robld --update` | Update robld and reinstall the skill. |
 | `robld save` | macOS: File → **Save to File** (Cmd+S only if mtime still does not change). No restart. |
@@ -69,24 +67,24 @@ Hand-wiring StudioMCP: newline-delimited JSON-RPC, not LSP `Content-Length`.
 
 ## Git
 
-If `git` is installed and this folder is not already a git repository, run `git init` and make an initial commit. Commit often (Luau, `place.rbxlx`, and other project files). Do not force-push or rewrite history unless asked.
+If `git` is installed and this folder is not already a git repository, run `git init` and make an initial commit. Commit often (Luau, the place file, and other project files). Do not force-push or rewrite history unless asked.
 
-Gitignore `place.rbxlx.lock` and `robuild-dump/` (dump copies logs and `rbx-storage.db`).
+Gitignore place lockfiles (e.g. `*.rbxlx.lock`) and `robuild-dump/` (dump copies logs and `rbx-storage.db`).
 
 Roblox-API-free modules can be unit-tested with Homebrew `luau` (`require("../src/shared/…")`).
 
 ## What lives where
 
 - **Luau:** files in this tree (Script Sync). Create/edit/delete on disk only.
-- **World / instances:** `place.rbxlx`. After MCP creates parts/meshes, File → **Save to File** (macOS). Do not rewrite the XML or restart Studio to persist.
-- **Ids / local path / name:** `place.json`.
+- **World / instances:** the local place file pointed at by `place.json` (often `place.rbxlx`, but the path is whatever is configured). After MCP creates parts/meshes, File → **Save to File** (macOS). Do not rewrite the place XML by hand or restart Studio to persist.
+- **Ids / local path / name:** `place.json` (source of truth for which place file to open).
 - **Folder map:** `robuild-sync.json`. Edit this file for a different layout; `robld` will not overwrite an existing map.
 - **MCP:** playtest, console, screenshots, inspect, meshes, marketplace inserts — **only if the tools exist**.
 
 | In git | Owned by |
 |---|---|
 | `*.luau` under synced folders | Script Sync (Studio ↔ disk) |
-| `place.rbxlx` | Studio **Save to File** — maps, instances, lighting |
+| Local place file (from `place.json`) | Studio **Save to File** — maps, instances, lighting |
 | `place.json` | `robld` |
 | `robuild-sync.json` | `robld` |
 
@@ -123,7 +121,8 @@ Call `list_roblox_studios` once per session if you do not have `studio_id`.
 
 ### Use MCP for
 
-- **Playtest:** `start_stop_play`, `get_console_output`, `screen_capture`, `get_studio_state`
+- **Playtest:** `start_stop_play`, `get_console_output`, `get_studio_state`
+- **Screenshots:** MCP `screen_capture` (in-agent; do not ask the user to take a screenshot)
 - **Inspect:** `search_game_tree`, `inspect_instance`
 - **Queries / setup:** `execute_luau` with `datamodel_type` Edit (or Client/Server only while playing)
 - **World:** instances, `insert_asset`, `search_asset`, `generate_mesh`, `generate_material`, `generate_procedural_model`
@@ -150,12 +149,12 @@ There is no Test menu item named **Play**.
 - Start: Test menu **Start Test Session**, or **F5** (key code 96) for Play Solo.
 - Stop: Test menu **Stop** / End Session.
 - Console: `FLog::CreatorOutput` in the **latest** `~/Library/Logs/Roblox/*Studio*_last.log`. A new Studio launch creates a new log; grepping an old `*_last.log` looks like play never started. `robld dump` copies logs; the live file is under `~/Library/Logs/Roblox/`.
-- Screenshots need **Screen Recording** permission for the host app.
+- Screenshots: MCP `screen_capture` only (do not ask the user to capture the screen).
 - Wrap Apple Events / `osascript` in a timeout (do not hang on `activate`). Do not use `open -a RobloxStudio`.
 
 ## Script Sync on this machine
 
-Studio Settings → Script Sync are **not** in `place.rbxlx`. They live in Studio’s `GlobalSettings_13.xml` (macOS `~/Library/Roblox/`, Windows `%LOCALAPPDATA%\Roblox\`).
+Studio Settings → Script Sync are **not** in the place file. They live in Studio’s `GlobalSettings_13.xml` (macOS `~/Library/Roblox/`, Windows `%LOCALAPPDATA%\Roblox\`).
 
 `robld` applies agent defaults when it **launches** Studio (not when Studio is already open, unless a restart is required). Before a required quit it sends File → **Save to File**, Enter for a Save dialog, then force-quits if still stuck. Defaults:
 
@@ -177,9 +176,9 @@ Conflict dialog: **Keep Disk** = this repo wins; **Keep Studio** = the place win
 
 ## Persist the world (macOS)
 
-MCP and Script Sync change the **open Studio session**, not `place.rbxlx`, until Studio saves. Official MCP cannot save to disk. `robld save` focuses Roblox Studio and sends **File → Save to File**. Cmd+S is not enough on unpublished local places; it is the fallback only if mtime still does not change. No restart, no rewriting XML.
+MCP and Script Sync change the **open Studio session**, not the on-disk place file, until Studio saves. Official MCP cannot save to disk. `robld save` focuses Roblox Studio and sends **File → Save to File**. Cmd+S is not enough on unpublished local places; it is the fallback only if mtime still does not change. No restart, no rewriting XML.
 
-Grant **Accessibility** to the app that runs robld (Terminal / iTerm / Grok): System Settings → Privacy & Security → Accessibility. If `place.rbxlx` mtime does not change, exit 2 — click the Studio window and retry.
+Grant **Accessibility** to the app that runs robld (Terminal / iTerm / Grok): System Settings → Privacy & Security → Accessibility. If the place file mtime does not change, exit 2 — click the Studio window and retry.
 
 Use this after MCP world edits (parts, meshes, lighting). Luau still goes through Script Sync files; you do not need save for script-only commits.
 
@@ -191,8 +190,8 @@ Use this after MCP world edits (parts, meshes, lighting). Luau still goes throug
 4. Playtest via MCP (expected). Prefer navigation/teleport, or Luau that drives control live — not WASD spam via MCP. If MCP is down, F5 / Start Test Session and the latest `*_last.log` as a bridge.
 5. Read console / screenshot / inspect.
 6. Stop play. Fix files on disk, not play-mode script source.
-7. If the DataModel changed (not just Luau), `robld save` then confirm `place.rbxlx` changed.
-8. Commit scripts + `place.rbxlx`.
+7. If the DataModel changed (not just Luau), `robld save` then confirm the place file changed.
+8. Commit scripts + the place file.
 
 Do not `multi_edit` a script in the same turn you wrote that file.
 
