@@ -18,4 +18,4 @@ Roblox Studio must already be installed. Studio is not available on Linux, so ro
 9. Tell the user that robld is installed, then ask: "What game would you like to work on now?"
 10. Never ask the user to run robld commands or flags unless they asked you to; you run them. User-facing talk is not a CLI cheat-sheet.
 
-Do not ask me to run these steps by hand unless a permission dialog needs a human. Later, if robld prints that a new version is available, you run the update — do not ask the user to. You can start creating or opening a game in this same session.
+Do not ask the user to run these steps by hand unless a permission dialog needs a human. Later, if robld prints that a new version is available, you run the update — do not ask the user to. You can start creating or opening a game in this same session.
