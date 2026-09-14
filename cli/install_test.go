@@ -32,6 +32,7 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 		"FLog::CreatorOutput",
 		"*_last.log",
 		"list_roblox_studios",
+		"robld status",
 		"start_stop_play",
 		"Unable to reach Roblox Studio",
 		"Never ask the user to run",

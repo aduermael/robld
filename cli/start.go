@@ -109,6 +109,9 @@ func main() {
 	case "dump":
 		runDump()
 		return
+	case "status":
+		runStatus()
+		return
 	case "install":
 		runInstall()
 		return
@@ -134,7 +137,7 @@ func main() {
 
 	bootStudio(studio, p, opts.newPlace)
 	scripts := waitUntilSyncReady()
-	printReady(p, scripts, studioMCPConnected(studio))
+	printReady(p, scripts, probeDefaultMCP())
 }
 
 func bootStudio(studio string, p place, newPlace bool) {
@@ -243,7 +246,8 @@ func usage() string {
 		"       robld prefs\n" +
 		"       robld prefs apply\n" +
 		"       robld scan\n" +
-		"       robld dump\n\n" +
+		"       robld dump\n" +
+		"       robld status\n\n" +
 		"Re-run until READY. Stateful: ids are stored in place.json.\n" +
 		"--install: write the robld skill into this folder for Claude, Grok, Codex, Cursor.\n" +
 		"--version: print the version.\n" +
@@ -251,6 +255,7 @@ func usage() string {
 		"save (macOS): File → Save to File so place.rbxlx updates. Cmd+S is the fallback. No restart.\n" +
 		"prefs: show this machine's Script Sync Studio Settings. Main robld also writes them.\n" +
 		"dump: copy Studio settings/logs/sync clues into robuild-dump/ for the agent to read.\n" +
+		"status: print place, Studio PID, MCP studios, and synced instance names. No restart.\n" +
 		"Exit 0 = ready, 1 = error, 2 = waiting on Script Sync in Studio.\n"
 }
 
@@ -342,6 +347,13 @@ func parseArgs(args []string) options {
 			rest = rest[1:]
 			if len(rest) > 0 {
 				fail(exitError, "ERROR: robld dump takes no extra arguments")
+			}
+			return opts
+		case "status":
+			opts.cmd = "status"
+			rest = rest[1:]
+			if len(rest) > 0 {
+				fail(exitError, "ERROR: robld status takes no extra arguments")
 			}
 			return opts
 		}
@@ -770,21 +782,6 @@ func findStudio() string {
 	return findMacStudio()
 }
 
-func studioRunning(studio string) bool {
-	name := filepath.Base(studio)
-	if runtime.GOOS == "darwin" {
-		return exec.Command("pgrep", "-f", "RobloxStudio").Run() == nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, "tasklist.exe", "/FI", "IMAGENAME eq "+name).CombinedOutput()
-	if err != nil {
-		return false
-	}
-	s := strings.ToLower(string(out))
-	return strings.Contains(s, strings.ToLower(name)) && !strings.Contains(s, "no tasks")
-}
-
 func launchStudio(studio string, p place) {
 	var args []string
 	if local := canonicalPlacePath(p); local != "" {
@@ -835,9 +832,9 @@ func writeMCP(studio string) {
 	info("Wrote MCP config: .mcp.json, .grok/config.toml, .codex/config.toml")
 }
 
-func printReady(p place, scripts []string, mcpOK bool) {
+func printReady(p place, scripts []string, probe mcpProbeResult) {
 	fmt.Println()
-	fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": "+readySuffix(mcpOK)))
+	fmt.Println(color("\033[32;1m", "READY") + color("\033[32m", ": "+readySuffix(probe.OK)))
 	if p.Name != "" {
 		fmt.Printf("  name: %s\n", p.Name)
 	}
@@ -849,11 +846,11 @@ func printReady(p place, scripts []string, mcpOK bool) {
 	}
 	fmt.Printf("  %d Luau file(s) in %s\n", len(scripts), root)
 	fmt.Printf("  sync map: %s\n", syncManifestName)
-	if mcpOK {
+	if probe.OK {
 		fmt.Println("  MCP connected. Keep Studio open.")
 	} else {
 		fmt.Println("  MCP config written, but Studio MCP is not connected yet.")
-		fmt.Println(mcpNeedUserMessage())
+		fmt.Println(mcpNeedUserForProbe(probe))
 	}
 	if report := gitScriptReport(); report != "" {
 		fmt.Println(report)
