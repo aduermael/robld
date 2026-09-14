@@ -39,7 +39,7 @@ Same command every time, from the game folder. Install from https://robld.com/ i
 | `robld --update` | Update robld and reinstall the skill. |
 | `robld save` | macOS: File → **Save to File** (Cmd+S only if mtime still does not change). No restart. |
 | `robld prefs` / `robld prefs apply` | Show or write this machine's Script Sync Studio Settings. |
-| `robld dump` | Copy Studio settings/logs/sync clues into `robuild-dump/` (unsliced plugin dump, not the truncated log line). |
+| `robld dump` | Copy Studio settings/logs/sync clues into `robuild-dump/` (`REPORT.txt`, copies, latest Studio logs). |
 | `robld scan` | Stdout-only version of the dump clues. |
 | `robld --help` | Usage text. |
 
@@ -61,7 +61,7 @@ Studio is required (macOS or Windows). If Studio was not found, stop. If Studio 
 
 `READY:` does **not** claim MCP unless a real Studio MCP `tools/list` is non-empty and Studio is reachable. Writing `.mcp.json` does not hot-load tools into this agent process.
 
-Script Sync **preferences** are per-machine; `robld` writes them and may restart Studio **only when prefs, the plugin, or resume records actually need a write**. Before that quit it sends File → **Save to File**. **`robuild-sync.json`** is the per-project folder map — honor it; games are not all `ServerScriptService/` on disk. Do not overwrite a custom map. The generated default maps `src/server|shared|client` to **services** (that is what Studio auto-resumes). New Luau goes next to existing siblings. If `robld` exits `NOT_READY`, show the printed Sync to… paths. `robld dump` → read `robuild-dump/REPORT.txt` and `rbx-storage.txt`.
+Script Sync **preferences** are per-machine; `robld` writes them and may restart Studio **only when prefs, the plugin, or resume records actually need a write**. Before that quit it sends File → **Save to File**. **`robuild-sync.json`** is the per-project folder map — honor it; games are not all `ServerScriptService/` on disk. Do not overwrite a custom map. The generated default maps `src/server|shared|client` to **services** (that is what Studio auto-resumes). New Luau goes next to existing siblings. If `robld` exits `NOT_READY`, show the printed Sync to… paths. `robld dump` → read `robuild-dump/REPORT.txt` and the newest `copies/*Studio*_last.log`.
 
 Hand-wiring StudioMCP: newline-delimited JSON-RPC, not LSP `Content-Length`.
 
@@ -107,11 +107,12 @@ On-disk artifact names still use the `robuild-*` prefix. The command you type is
 Under **StarterPlayerScripts** (the default `src/client` root), use `*.local.luau`. `*.client.luau` (RunContext Client) in that container runs multiple times. Use `.client.luau` only if the parent is **not** a starter-player script container.
 
 - Put new scripts next to existing siblings so they land under the already-synced Studio folder.
+- Keep **agent helper scripts** in this repo (movement/test harnesses, play-mode drivers, debug dumps). Search the synced tree first and **reuse or extend**; commit them with the feature; do not rewrite each session or delete after the task. `execute_luau` is one-shot inspect/teleport/assert — reusable drivers go on disk. Require-able modules: `src/shared/*.luau`. Helpers that must **run** in play need a runner next to client/server siblings (suffixes above), not a ModuleScript sitting unused in shared.
 - MCP `script_read` / `script_search` / `script_grep` are fine for **reading** live source.
 - Do not use MCP `multi_edit` (or `execute_luau` that assigns `Source`) on a script that lives on disk.
 - Do not create scripts via MCP under parts, GUIs, or other non-Folder instances if they should be committed — Script Sync will not pick them up.
 
-After adding a ModuleScript, wait until plugin dump `instances[]` lists it (`robld dump` / unsliced `robuildDump`, not the truncated `ROBUILD_JSON` log line). Then playtest.
+After adding a script, give Script Sync a moment, then confirm with MCP `search_game_tree` / `script_search` if needed.
 
 ## MCP — expected on
 
@@ -122,7 +123,7 @@ Call `list_roblox_studios` once per session if you do not have `studio_id`.
 ### Use MCP for
 
 - **Playtest:** `start_stop_play`, `get_console_output`, `get_studio_state`
-- **Screenshots:** MCP `screen_capture` (in-agent; do not ask the user to take a screenshot)
+- **Screenshots:** MCP `screen_capture` — **Screenshots — verify integration**
 - **Inspect:** `search_game_tree`, `inspect_instance`
 - **Queries / setup:** `execute_luau` with `datamodel_type` Edit (or Client/Server only while playing)
 - **World:** instances, `insert_asset`, `search_asset`, `generate_mesh`, `generate_material`, `generate_procedural_model`
@@ -136,11 +137,15 @@ Studio MCP is **turn-based**. `user_keyboard_input` / `user_mouse_input` send di
 
 - Do **not** drive continuous locomotion with long WASD / mouse-move MCP sequences.
 - Prefer **`character_navigation`** or **`execute_luau`** (`HumanoidRootPart.CFrame`, `Humanoid:MoveTo`, teleport, checkpoint spawn) when you only need the character placed to test systems.
-- Prefer **console + `screen_capture` + inspect** to verify outcomes without piloting.
-- For **continuous / reactive control** (chase AI, auto-run to a point, hold a key while something happens, environment-driven locomotion): **write Luau on disk** that handles input or control live in play (`UserInputService`, `ContextActionService`, `Humanoid:Move` / `MoveTo`, RunService steppers, etc.). That runs every frame in Studio — MCP only starts play, watches console/screenshots, and asserts. Put those scripts under the synced tree like any other game code.
+- Prefer inspect/console for non-visual asserts; visual check: **Screenshots — verify integration**.
+- For **continuous / reactive control** (chase AI, auto-run to a point, hold a key while something happens, environment-driven locomotion): **write Luau on disk** that handles input or control live in play (`UserInputService`, `ContextActionService`, `Humanoid:Move` / `MoveTo`, RunService steppers, etc.). That runs every frame in Studio — MCP only starts play, watches console/screenshots, and asserts. Reuse existing helpers (**Scripts — disk only**).
 - If a human’s control *feel* still matters, ask the **user** to play that pass; keep MCP for setup, assertions, and world edits.
 
-Official tool overview: [Studio MCP](https://create.roblox.com/docs/studio/mcp).
+## Screenshots — verify integration
+
+`inspect_instance` does not show how things look. After inserts, welds, seats, UI, or other viewport-visible changes, **proactively** call MCP `screen_capture` (do not ask the user to screenshot).
+
+Toolbox/library models are often rotated wrong, floating, or not seated in the player’s hand; vehicles/seats and HUD/UI clip or stack. Capture → fix (disk Luau or world MCP) → capture again until it looks integrated. One happy-path shot is not enough when tools, seats, or UI are involved.
 
 ## Playtest fallback (no MCP tools)
 
@@ -149,7 +154,7 @@ There is no Test menu item named **Play**.
 - Start: Test menu **Start Test Session**, or **F5** (key code 96) for Play Solo.
 - Stop: Test menu **Stop** / End Session.
 - Console: `FLog::CreatorOutput` in the **latest** `~/Library/Logs/Roblox/*Studio*_last.log`. A new Studio launch creates a new log; grepping an old `*_last.log` looks like play never started. `robld dump` copies logs; the live file is under `~/Library/Logs/Roblox/`.
-- Screenshots: MCP `screen_capture` only (do not ask the user to capture the screen).
+- Screenshots are unavailable without MCP; do not ask the user to capture.
 - Wrap Apple Events / `osascript` in a timeout (do not hang on `activate`). Do not use `open -a RobloxStudio`.
 
 ## Script Sync on this machine
@@ -164,7 +169,7 @@ Studio Settings → Script Sync are **not** in the place file. They live in Stud
 | Resume conflicted sync on place open | Always keep local |
 | Keep local files/directories after Stop Sync | Keep local files |
 | File extension | `.luau` |
-| Enable Studio as MCP server | on (`Assistant-ExternalMCPEnabled` in `InstalledPlugins/0/settings.json`) |
+| Enable Studio as MCP server | on (`Assistant-ExternalMCPEnabled` in `InstalledPlugins/0/settings.json` and `AssistantSettings/<userId>.json`) |
 
 The main `robld` command also:
 
@@ -184,15 +189,13 @@ Use this after MCP world edits (parts, meshes, lighting). Luau still goes throug
 
 ## Loop
 
-1. `robld` until `READY:`.
-2. Edit Luau on disk.
-3. After adding a ModuleScript, wait until dump `instances[]` lists it.
-4. Playtest via MCP (expected). Prefer navigation/teleport, or Luau that drives control live — not WASD spam via MCP. If MCP is down, F5 / Start Test Session and the latest `*_last.log` as a bridge.
-5. Read console / screenshot / inspect.
+1. `robld` until `READY:`. If the line is `READY: Script Sync` without MCP, surface `NEED_USER` once and use **Playtest fallback**; do not re-run `robld` hoping MCP appears.
+2. Search the synced tree for existing agent helpers; reuse or extend before writing new ones (**Scripts — disk only**).
+3. Edit Luau on disk.
+4. Playtest via MCP (expected). Locomotion: **Player movement**. If MCP is down: **Playtest fallback**.
+5. **Screenshots — verify integration** after world, tool, vehicle, or UI changes. Read console / inspect.
 6. Stop play. Fix files on disk, not play-mode script source.
-7. If the DataModel changed (not just Luau), `robld save` then confirm the place file changed.
-8. Commit scripts + the place file.
-
-Do not `multi_edit` a script in the same turn you wrote that file.
+7. If the DataModel changed (not just Luau), persist (**Persist the world**).
+8. Commit scripts (including helpers) + the place file.
 
 Official docs: [Script Sync](https://create.roblox.com/docs/scripting/sync) · [Studio MCP](https://create.roblox.com/docs/studio/mcp) · [Studio CLI](https://create.roblox.com/docs/studio/command-line-interface).
