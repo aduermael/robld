@@ -113,6 +113,9 @@ func runDump() {
 	writeMCPSettingReport(w)
 
 	w("")
+	writeMCPProbeReport(w, probeDefaultMCP())
+
+	w("")
 	w("== intended sync map (robuild-sync.json) ==")
 	m := loadSyncManifest()
 	for _, r := range m.Roots {

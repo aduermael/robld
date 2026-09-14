@@ -51,7 +51,7 @@ func runFakeMCPServer(mode string) error {
 		case "tools/list":
 			var tools []any
 			switch mode {
-			case "ok", "unreachable":
+			case "ok", "unreachable", "empty-studios":
 				tools = []any{
 					map[string]any{"name": "list_roblox_studios"},
 					map[string]any{"name": "start_stop_play"},
@@ -67,11 +67,14 @@ func runFakeMCPServer(mode string) error {
 		case "tools/call":
 			params, _ := req["params"].(map[string]any)
 			name, _ := params["name"].(string)
-			text := "ok"
+			text := `{"studios":[{"id":"studio-1","name":"place.rbxlx"}]}`
 			isErr := false
-			if mode == "unreachable" || name == "list_roblox_studios" && mode == "unreachable" {
+			switch {
+			case mode == "unreachable" || (name == "list_roblox_studios" && mode == "unreachable"):
 				text = "Unable to reach Roblox Studio right now. Ask the user to confirm that Studio is running with a place open and the MCP server enabled in Assistant settings."
 				isErr = true
+			case mode == "empty-studios":
+				text = `{"studios":[]}`
 			}
 			_ = enc.Encode(map[string]any{
 				"jsonrpc": "2.0",
@@ -141,13 +144,42 @@ func TestMCPProbeUnreachable(t *testing.T) {
 func TestMCPProbeNonEmptyTools(t *testing.T) {
 	got := probeFake(t, "ok")
 	if !got.OK {
-		t.Fatalf("non-empty tools/list should claim MCP: %+v", got)
+		t.Fatalf("tools + a studio should claim MCP: %+v", got)
 	}
 	if got.Tools < 1 {
 		t.Fatalf("expected tools from fake server, got %+v", got)
 	}
+	if len(got.Studios) < 1 {
+		t.Fatalf("expected a studio from fake server, got %+v", got)
+	}
 	if readySuffix(true) != "Script Sync + MCP" {
 		t.Fatal(readySuffix(true))
+	}
+}
+
+func TestMCPProbeEmptyStudios(t *testing.T) {
+	got := probeFake(t, "empty-studios")
+	if got.OK {
+		t.Fatalf("empty studios: [] must not be MCP-ready: %+v", got)
+	}
+	if got.Tools < 1 {
+		t.Fatalf("tools/list should still be non-empty: %+v", got)
+	}
+	if len(got.Studios) != 0 {
+		t.Fatalf("expected no studios, got %+v", got)
+	}
+	if got.Detail != "no Studio attached" {
+		t.Fatalf("detail=%q", got.Detail)
+	}
+	need := mcpNeedUserForProbe(got)
+	if !strings.Contains(need, "NEED_USER:") || !strings.Contains(need, "Open a place") {
+		t.Fatalf("empty studios should ask to open a place: %q", need)
+	}
+	if strings.Contains(need, "Manage MCP Servers") {
+		t.Fatalf("empty studios must not send the user to the MCP toggle: %q", need)
+	}
+	if readySuffix(got.OK) != "Script Sync" {
+		t.Fatalf("ready suffix %q", readySuffix(got.OK))
 	}
 }
 
@@ -158,8 +190,14 @@ func TestMCPProbeOKClassifier(t *testing.T) {
 	if mcpProbeOK(3, "Unable to reach Roblox Studio") {
 		t.Fatal("unreachable")
 	}
-	if !mcpProbeOK(1, `{"tools":[{"name":"list_roblox_studios"}]}`) {
-		t.Fatal("non-empty tools should be ok")
+	if mcpProbeOK(1, `{"tools":[{"name":"list_roblox_studios"}]}`) {
+		t.Fatal("tools without studios must not be ok")
+	}
+	if mcpProbeOK(2, `{"studios":[]}`) {
+		t.Fatal("empty studios must not be ok")
+	}
+	if !mcpProbeOK(1, `{"studios":[{"id":"1","name":"place.rbxlx"}]}`) {
+		t.Fatal("a studio list should be ok")
 	}
 }
 

@@ -30,7 +30,7 @@ func captureStdout(t *testing.T, fn func()) string {
 func TestPrintReadySplitsMCP(t *testing.T) {
 	root = t.TempDir()
 	out := captureStdout(t, func() {
-		printReady(place{Name: "Slash Waves", LocalPlaceFile: "place.rbxlx"}, nil, false)
+		printReady(place{Name: "Slash Waves", LocalPlaceFile: "place.rbxlx"}, nil, mcpProbeResult{})
 	})
 	if !strings.Contains(out, "READY: Script Sync") {
 		t.Fatalf("expected Script Sync ready:\n%s", out)
@@ -43,10 +43,33 @@ func TestPrintReadySplitsMCP(t *testing.T) {
 	}
 
 	ok := captureStdout(t, func() {
-		printReady(place{Name: "Slash Waves"}, nil, true)
+		printReady(place{Name: "Slash Waves"}, nil, mcpProbeResult{
+			OK:      true,
+			Tools:   2,
+			Studios: []mcpStudio{{ID: "studio-1", Name: "place.rbxlx"}},
+		})
 	})
 	if !strings.Contains(ok, "READY: Script Sync + MCP") {
-		t.Fatalf("non-empty tools may claim MCP:\n%s", ok)
+		t.Fatalf("tools + a studio may claim MCP:\n%s", ok)
+	}
+}
+
+func TestPrintReadyEmptyStudiosAsksOpenPlace(t *testing.T) {
+	root = t.TempDir()
+	out := captureStdout(t, func() {
+		printReady(place{Name: "Slash Waves"}, nil, mcpProbeResult{
+			Tools:  2,
+			Detail: "no Studio attached",
+		})
+	})
+	if strings.Contains(out, "READY: Script Sync + MCP") {
+		t.Fatalf("empty studios must not claim MCP:\n%s", out)
+	}
+	if !strings.Contains(out, "Open a place") {
+		t.Fatalf("expected open-place NEED_USER:\n%s", out)
+	}
+	if strings.Contains(out, "Manage MCP Servers") {
+		t.Fatalf("empty studios must not use the MCP toggle:\n%s", out)
 	}
 }
 
@@ -99,6 +122,10 @@ func TestParseArgsPrefsAndScan(t *testing.T) {
 	scan := parseArgs([]string{"scan"})
 	if scan.cmd != "scan" {
 		t.Fatalf("scan: %+v", scan)
+	}
+	st := parseArgs([]string{"status"})
+	if st.cmd != "status" {
+		t.Fatalf("status: %+v", st)
 	}
 }
 

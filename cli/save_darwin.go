@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -105,23 +104,6 @@ func runOSAScript(script string, timeout time.Duration) ([]byte, error) {
 		return out, fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))
 	}
 	return out, nil
-}
-
-func studioPID() (int, error) {
-	out, err := exec.Command("pgrep", "-x", "RobloxStudio").Output()
-	if err != nil {
-		out, err = exec.Command("pgrep", "-f", "RobloxStudio.app").Output()
-	}
-	if err != nil {
-		return 0, fmt.Errorf("Roblox Studio process not found")
-	}
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		pid, convErr := strconv.Atoi(strings.TrimSpace(line))
-		if convErr == nil && pid > 0 {
-			return pid, nil
-		}
-	}
-	return 0, fmt.Errorf("Roblox Studio process not found")
 }
 
 func isAccessibilityError(msg string) bool {

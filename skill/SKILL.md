@@ -21,7 +21,7 @@ These are the only human steps. Name the UI; do not invite them to run CLI.
 1. **Studio login** if Studio shows a sign-in window.
 2. **macOS Accessibility** for the app that runs robld (Terminal / Grok / Cursor / …): System Settings → Privacy & Security → Accessibility — needed for File → Save / menu keystrokes, not for screenshots.
 
-**MCP is expected on.** `robld` writes `Assistant-ExternalMCPEnabled` before it launches Studio. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable after that: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**.
+**MCP is expected on.** `robld` writes `Assistant-ExternalMCPEnabled` before it launches Studio. Do **not** make “enable MCP” a routine ask. If `list_roblox_studios` is **missing** or returns **“Unable to reach Roblox Studio”**: Assistant → … → Manage MCP Servers → enable **Studio as MCP server**. If the tool exists but returns **no studios**, the user should **open a place** in Studio (not the MCP toggle).
 
 Do not ask the user to click **Save / Don't Save / Cancel** on restart. robld saves, sends Enter, waits, then force-quits if Studio is still up.
 
@@ -40,6 +40,7 @@ Same command every time, from the game folder. Install from https://robld.com/ i
 | `robld save` | macOS: File → **Save to File** (Cmd+S only if mtime still does not change). No restart. |
 | `robld prefs` / `robld prefs apply` | Show or write this machine's Script Sync Studio Settings. |
 | `robld dump` | Copy Studio settings/logs/sync clues into `robuild-dump/` (`REPORT.txt`, copies, latest Studio logs). |
+| `robld status` | Place, whether Studio is running and its PID, MCP studios (or not connected), synced instance names. No restart. |
 | `robld scan` | Stdout-only version of the dump clues. |
 | `robld --help` | Usage text. |
 
@@ -51,15 +52,15 @@ You run `robld` from the game folder. Pass ids as args; do not prompt. Do not st
 
 | Exit | What you do |
 |---|---|
-| 0 and `READY: Script Sync + MCP` | Script Sync and Studio MCP tools/list are live. This is the normal path — continue. |
-| 0 and `READY: Script Sync` | Script Sync is up but MCP probe failed. Unusual. Surface `NEED_USER:` (enable Studio as MCP server) once, then prefer fixing MCP over living in the playtest fallback. |
+| 0 and `READY: Script Sync + MCP` | Script Sync is up, tools/list is non-empty, and `list_roblox_studios` has a studio. This is the normal path — continue. |
+| 0 and `READY: Script Sync` | Script Sync is up but MCP is not attached. If tools exist but studios is empty, ask the user to open a place. If tools are missing or Studio is unreachable, surface the Assistant MCP toggle once. Prefer fixing MCP over living in the playtest fallback. |
 | 1 `NEED_PLACE:` | Create a local place or bind a place id / game URL. Re-run. |
 | 1 `ERROR:` | Show the message (usually Studio missing). Do not invent a connection. |
 | 2 `NOT_READY:` | Show the printed Sync to… steps. After the user does them, re-run. |
 
 Studio is required (macOS or Windows). If Studio was not found, stop. If Studio shows a login window, the user must sign in, then you continue.
 
-`READY:` does **not** claim MCP unless a real Studio MCP `tools/list` is non-empty and Studio is reachable. Writing `.mcp.json` does not hot-load tools into this agent process.
+`READY:` does **not** claim MCP unless `tools/list` is non-empty **and** `list_roblox_studios` reports at least one studio. Empty `studios: []` is not MCP-ready. Writing `.mcp.json` does not hot-load tools into this agent process.
 
 Script Sync **preferences** are per-machine; `robld` writes them and may restart Studio **only when prefs, the plugin, or resume records actually need a write**. Before that quit it sends File → **Save to File**. **`robuild-sync.json`** is the per-project folder map — honor it; games are not all `ServerScriptService/` on disk. Do not overwrite a custom map. The generated default maps `src/server|shared|client` to **services** (that is what Studio auto-resumes). New Luau goes next to existing siblings. If `robld` exits `NOT_READY`, show the printed Sync to… paths. `robld dump` → read `robuild-dump/REPORT.txt` and the newest `copies/*Studio*_last.log`.
 
@@ -112,13 +113,13 @@ Under **StarterPlayerScripts** (the default `src/client` root), use `*.local.lua
 - Do not use MCP `multi_edit` (or `execute_luau` that assigns `Source`) on a script that lives on disk.
 - Do not create scripts via MCP under parts, GUIs, or other non-Folder instances if they should be committed — Script Sync will not pick them up.
 
-After adding a script, give Script Sync a moment, then confirm with MCP `search_game_tree` / `script_search` if needed.
+After adding a script, wait until it exists: MCP `search_game_tree` / `script_search`, or `robld status` (plugin dump instance names).
 
 ## MCP — expected on
 
 Call `list_roblox_studios` once per session if you do not have `studio_id`.
 
-`robld` expects Studio MCP to be active. After a true `READY: Script Sync + MCP`, use the tools. If `list_roblox_studios` is **missing** or returns **“Unable to reach Roblox Studio”**, **stop** using `start_stop_play`, `get_console_output`, and `screen_capture` — surface the enable-MCP `NEED_USER` once, then use the playtest fallback only as a bridge. Do not assume tools exist just because `.mcp.json` was written.
+`robld` expects Studio MCP to be active. After a true `READY: Script Sync + MCP`, use the tools. If `list_roblox_studios` is **missing** or returns **“Unable to reach Roblox Studio”**, **stop** using `start_stop_play`, `get_console_output`, and `screen_capture` — surface the enable-MCP `NEED_USER` once, then use the playtest fallback only as a bridge. If it returns **no studios**, ask the user to open a place; do not send them to the MCP toggle. Do not assume tools exist just because `.mcp.json` was written.
 
 ### Use MCP for
 

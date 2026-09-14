@@ -15,10 +15,16 @@ import (
 	"time"
 )
 
+type mcpStudio struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type mcpProbeResult struct {
-	OK     bool
-	Tools  int
-	Detail string
+	OK      bool
+	Tools   int
+	Studios []mcpStudio
+	Detail  string
 }
 
 func studioMCPCommand(studio string) (command string, args []string) {
@@ -39,6 +45,20 @@ func mcpNeedUserMessage() string {
 	return "NEED_USER: Enable Studio as MCP server: Assistant → … → Manage MCP Servers → enable Studio as MCP server."
 }
 
+func mcpNeedPlaceMessage() string {
+	return "NEED_USER: Open a place in Roblox Studio so Studio MCP can attach."
+}
+
+func mcpNeedUserForProbe(p mcpProbeResult) string {
+	if p.OK {
+		return ""
+	}
+	if p.Tools > 0 && p.Detail == "no Studio attached" {
+		return mcpNeedPlaceMessage()
+	}
+	return mcpNeedUserMessage()
+}
+
 // Assistant → Manage MCP Servers → "Enable Studio as MCP server".
 // Confirmed on Studio 0.738 (dump 2026-09-13, MCP on): this JSON bool lives in
 // Documents/Roblox/<userId>/InstalledPlugins/0/settings.json (local-plugin
@@ -46,18 +66,21 @@ func mcpNeedUserMessage() string {
 // True, so also write Library/Roblox/AssistantSettings/<userId>.json.
 const assistantMCPSettingKey = "Assistant-ExternalMCPEnabled"
 
-// mcpProbeOK is the shipped classifier: empty tools/list or
-// "Unable to reach Roblox Studio" is not MCP-ready.
+// mcpProbeOK is the shipped classifier: empty tools/list,
+// "Unable to reach Roblox Studio", or studios: [] is not MCP-ready.
 func mcpProbeOK(nTools int, blob string) bool {
 	if nTools <= 0 {
 		return false
 	}
-	return !strings.Contains(blob, "Unable to reach Roblox Studio")
+	if strings.Contains(blob, "Unable to reach Roblox Studio") {
+		return false
+	}
+	return len(studiosFromBlob(blob)) > 0
 }
 
-func studioMCPConnected(studio string) bool {
-	cmd, args := studioMCPCommand(studio)
-	return probeStudioMCP(cmd, args, 8*time.Second).OK
+func probeDefaultMCP() mcpProbeResult {
+	cmd, args := studioMCPCommand(findStudio())
+	return probeStudioMCP(cmd, args, 8*time.Second)
 }
 
 func probeStudioMCP(command string, args []string, timeout time.Duration) mcpProbeResult {
@@ -164,12 +187,64 @@ func probeStudioMCP(command string, args []string, timeout time.Duration) mcpPro
 		}
 	}
 
+	studios := studiosFromBlob(blob)
 	ok := mcpProbeOK(nTools, blob)
 	detail := "tools/list"
 	if !ok {
-		detail = "Studio MCP not connected"
+		if nTools > 0 && !strings.Contains(blob, "Unable to reach Roblox Studio") {
+			detail = "no Studio attached"
+		} else {
+			detail = "Studio MCP not connected"
+		}
 	}
-	return mcpProbeResult{OK: ok, Tools: nTools, Detail: detail}
+	return mcpProbeResult{OK: ok, Tools: nTools, Studios: studios, Detail: detail}
+}
+
+func studiosFromBlob(blob string) []mcpStudio {
+	if list := studiosFromText(blob); list != nil {
+		if len(list) > 0 {
+			return list
+		}
+	}
+	var empty []mcpStudio
+	for _, line := range strings.Split(blob, "\n") {
+		if list := studiosFromText(line); list != nil {
+			if len(list) > 0 {
+				return list
+			}
+			empty = list
+		}
+	}
+	return empty
+}
+
+func studiosFromText(s string) []mcpStudio {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(s, " error")
+	if s == "" {
+		return nil
+	}
+	var wrap struct {
+		Studios *[]mcpStudio `json:"studios"`
+	}
+	if json.Unmarshal([]byte(s), &wrap) == nil && wrap.Studios != nil {
+		return *wrap.Studios
+	}
+	idx := strings.Index(s, `"studios"`)
+	if idx < 0 {
+		return nil
+	}
+	start := strings.LastIndex(s[:idx], "{")
+	if start < 0 {
+		start = idx
+		s = "{" + s[idx:]
+		start = 0
+	}
+	dec := json.NewDecoder(strings.NewReader(s[start:]))
+	if dec.Decode(&wrap) == nil && wrap.Studios != nil {
+		return *wrap.Studios
+	}
+	return nil
 }
 
 func readJSONRPCLine(ctx context.Context, r *bufio.Reader) (map[string]any, []byte, error) {
@@ -467,6 +542,22 @@ func applyStudioMCPSetting() bool {
 		warn("Studio MCP setting %s is not on and no settings file could be written.", assistantMCPSettingKey)
 	}
 	return n > 0
+}
+
+func writeMCPProbeReport(w func(string, ...any), probe mcpProbeResult) {
+	w("== Studio MCP probe ==")
+	w("  ok=%v tools=%d studios=%d", probe.OK, probe.Tools, len(probe.Studios))
+	if probe.Detail != "" {
+		w("  detail=%s", probe.Detail)
+	}
+	if !probe.OK {
+		if msg := mcpNeedUserForProbe(probe); msg != "" {
+			w("  %s", msg)
+		}
+	}
+	for _, s := range probe.Studios {
+		w("  studio %s  %s", s.ID, s.Name)
+	}
 }
 
 func writeMCPSettingReport(w func(string, ...any)) {

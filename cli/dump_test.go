@@ -27,7 +27,7 @@ func TestDumpWritesReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(report)
-	for _, part := range []string{"robld dump", "DumpTest", "placeIDEState", "intended sync map", "Script Sync resume records", "Studio MCP setting", "Assistant-ExternalMCPEnabled"} {
+	for _, part := range []string{"robld dump", "DumpTest", "placeIDEState", "intended sync map", "Script Sync resume records", "Studio MCP setting", "Assistant-ExternalMCPEnabled", "Studio MCP probe", "tools="} {
 		if !strings.Contains(s, part) {
 			t.Fatalf("REPORT missing %q\n%s", part, s)
 		}
