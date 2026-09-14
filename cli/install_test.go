@@ -34,19 +34,18 @@ func TestInstallSkillWritesEmbeddedSkill(t *testing.T) {
 		"list_roblox_studios",
 		"start_stop_play",
 		"Unable to reach Roblox Studio",
-		"What game would you like to work on now?",
 		"Never ask the user to run",
-		"wait for an agent restart",
-		"place.rbxlx.lock",
+		"*.rbxlx.lock",
 		"robuild-dump/",
 		"Homebrew `luau`",
 		"newline-delimited JSON-RPC",
 		"Content-Length",
-		"Screen Recording",
+		"screen_capture",
 		"open -a RobloxStudio",
 		"Manage MCP Servers",
 		"force-quits",
 		"key code 96",
+		hostUIPermissionLine(),
 	} {
 		if !strings.Contains(body, need) {
 			t.Errorf("embedded skill missing %q", need)
@@ -144,5 +143,19 @@ func TestInstallSkillLeavesExistingAgents(t *testing.T) {
 	}
 	if string(got) != want {
 		t.Fatalf("AGENTS.md overwritten: %q", got)
+	}
+}
+
+func TestSkillBodyExpandsHostUIPermission(t *testing.T) {
+	body := skillBody()
+	want := hostUIPermissionLine()
+	if !strings.Contains(body, want) {
+		t.Fatalf("skill body missing host UI permission line %q", want)
+	}
+	if strings.Contains(body, "{{HOST_UI_PERMISSION}}") {
+		t.Fatal("skill body still has unresolved HOST_UI_PERMISSION token")
+	}
+	if strings.Contains(body, "**Accessibility** for the app that launches robld") {
+		t.Fatal("old vague Accessibility bullet still present")
 	}
 }

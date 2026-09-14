@@ -19,7 +19,7 @@ description: >
 These are the only human steps. Name the UI; do not invite them to run CLI.
 
 1. **Studio login** if Studio shows a sign-in window.
-2. **Accessibility** for the app that launches robld (menus, save, F5) — not for screenshots.
+2. **macOS Accessibility** for the app that runs robld (Terminal / Grok / Cursor / …): System Settings → Privacy & Security → Accessibility — needed for File → Save / menu keystrokes, not for screenshots.
 
 **MCP is expected on.** `robld` assumes Studio’s MCP server is active for playtest/world work. Do **not** make “enable MCP” a routine ask. Only if `list_roblox_studios` is missing/empty or Studio is unreachable: tell them Assistant → … → Manage MCP Servers → enable **Studio as MCP server**. (`robld` will write that preference before launch once the GlobalSettings property name is confirmed from a dump.)
 
@@ -178,7 +178,7 @@ Conflict dialog: **Keep Disk** = this repo wins; **Keep Studio** = the place win
 
 MCP and Script Sync change the **open Studio session**, not the on-disk place file, until Studio saves. Official MCP cannot save to disk. `robld save` focuses Roblox Studio and sends **File → Save to File**. Cmd+S is not enough on unpublished local places; it is the fallback only if mtime still does not change. No restart, no rewriting XML.
 
-Grant **Accessibility** to the app that runs robld (Terminal / iTerm / Grok): System Settings → Privacy & Security → Accessibility. If the place file mtime does not change, exit 2 — click the Studio window and retry.
+Grant **macOS Accessibility** to the app that runs robld (Terminal / iTerm / Grok / Cursor): System Settings → Privacy & Security → Accessibility. If the place file mtime does not change, exit 2 — click the Studio window and retry.
 
 Use this after MCP world edits (parts, meshes, lighting). Luau still goes through Script Sync files; you do not need save for script-only commits.
 
